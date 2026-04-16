@@ -1,0 +1,18 @@
+# Next.js
+.next/
+out/
+build/
+node_modules/
+
+# Environment
+.env.local
+.env*.local
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+
+# Supabase (local state, generated types)
+supabase/.branches/
+supabase/.temp/
