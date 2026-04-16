@@ -858,27 +858,19 @@ npx supabase gen types typescript --project-id <project-ref> > types/database.ty
 
 **User-Entscheidung vor Planung nötig für A1 und A2** — der Planer sollte diese beiden Assumptions in der Plan-Phase zur Klärung zurück an Discussion eskalieren oder explizit mit dem User abstimmen.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Wie persistiert `subscription_tier` Default-Schools-Zuordnung?**
-   - What we know: Phase 60 gated Klasse-4-Content per `schools.subscription_tier`.
-   - What's unclear: In Phase 10 muss bereits eine Default-Schule erzeugt werden (oder pro Lehrer-Signup eine), damit Kind-Accounts eine `class_id` bekommen können, die wiederum ein `school_id` hat.
-   - Recommendation: Beim Teacher-Signup fragen: „Name der Schule" + „Name der Klasse". Beides wird on-the-fly erzeugt. Alternativ: Ein „Demo-Schule"-Seed in der Migration.
+   - **RESOLVED:** Teacher-Signup-Formular fragt `Name der Schule` + `Name der Klasse` zusätzlich zu Email + Passwort + Name. Beides wird in derselben Server Action atomisch erzeugt (schools INSERT → classes INSERT → profiles trigger). Dokumentiert als D-13a in CONTEXT.md. Kein Demo-Schule-Seed in Migration — Produktions-sauber.
 
 2. **Soll ein Seed-Skript für Demo-Daten existieren?**
-   - What we know: Universitäts-Demo am Prüfungstag braucht funktionierende Accounts.
-   - What's unclear: Wie wird der initiale Lehrer + Klasse + ein Test-Kind erzeugt?
-   - Recommendation: `supabase/seed.sql` mit 1 Schule, 1 Lehrer, 1 Klasse, 2 Kindern — aber **nur für lokale Entwicklung**, nicht gegen Produktion pushen.
+   - **RESOLVED:** Kein Seed-Skript in Phase 10. Die University-Demo am Prüfungstag nutzt den normalen Teacher-Signup-Flow live (zeigt zugleich, dass Signup funktioniert). E2E-Test-Fixtures in Plan 10-09 erzeugen Test-Daten via Admin-Client — getrennt vom Demo-Pfad.
 
 3. **Wie wird der PIN-Reset geflowt, wenn ein Kind ihn vergisst?**
-   - What we know: Kinder (6-10 Jahre) werden PINs vergessen.
-   - What's unclear: Ist in Phase 10 ein „Lehrer setzt PIN zurück"-Flow nötig, oder reicht „PIN wird per neuer `auth.admin.updateUserById()` überschrieben"?
-   - Recommendation: Für MVP Phase 10 reicht **kein** Reset-UI. Lehrer kann über das Supabase-Dashboard direkt updaten. Reset-UI wird in Phase 50 (Teacher-Dashboard) eingebaut.
+   - **RESOLVED:** Nicht in Phase 10. Kein Reset-UI in dieser Phase. Lehrkraft kann bei Bedarf direkt im Supabase-Dashboard updaten (dokumentiert als Betriebs-Hinweis in Phase 70). Reset-UI ist Scope von Phase 50 (Teacher-Dashboard) — dort natürlicher Ort, weil Lehrer ihre Klasse verwaltet.
 
 4. **Wie werden Next.js 15 → 16 Upgrades nach Projekt-Abgabe behandelt?**
-   - What we know: Next.js 16 ist seit Q4 2025 stable; 15.x bleibt gepflegt.
-   - What's unclear: Keine Auswirkung auf Phase 10, aber Langzeit-Relevanz.
-   - Recommendation: Für Uni-Projekt: auf 15.2 bleiben (STACK.md). Migrationsnotiz in Doku-Phase 70 festhalten.
+   - **RESOLVED:** Phase 10 bleibt auf Next.js 15.2 gemäß STACK.md. Upgrade-Pfad (Codemod, `middleware.ts` → `proxy.ts` Rename) ist dokumentiert in Phase 70 (Technische Dokumentation) als „Future Work".
 
 ## Environment Availability
 

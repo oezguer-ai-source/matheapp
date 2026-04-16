@@ -29,10 +29,12 @@ A running Next.js application where children and teachers can log in with role-a
 - **D-09:** Login page has a role-switch toggle (Kind / Lehrkraft) that shows the appropriate form fields
 
 ### Database schema
-- **D-10:** Tables: `profiles` (user_id FK to auth.users, role, grade_level, display_name, class_id, pin_code), `classes` (id, teacher_id, name, school_id), `schools` (id, name, subscription_tier), `progress_entries` (child_id, operation_type, grade, correct, points_earned, created_at)
-- **D-11:** RLS policies: children can only read/write their own profile and progress data; teachers can read all profiles and progress in their class; no cross-class data access
-- **D-12:** `role` field in `profiles` determines routing and access — values: `child` | `teacher`
+- **D-10:** Tables: `profiles` (user_id FK to auth.users, role, grade_level, display_name, class_id, optional pin_hint), `classes` (id, teacher_id, name, school_id), `schools` (id, name, subscription_tier), `progress_entries` (child_id, operation_type, grade, correct, points_earned, created_at)
+- **D-10a:** PIN is NEVER stored as plain text. PIN lives exclusively as a bcrypt hash in `auth.users.encrypted_password` (managed by Supabase Auth). A nullable `pin_hint` column exists only for teacher-visible hints (optional, not the actual PIN). This refines D-10 based on RESEARCH A1 (security: prevent plaintext PIN storage).
+- **D-11:** RLS policies: children can only read/write their own profile and progress data; teachers can read all profiles and progress in their class; no cross-class data access. Use `SECURITY DEFINER` helper functions in a private schema to avoid infinite recursion.
+- **D-12:** `role` field in `profiles` determines routing and access — values: `child` | `teacher`. Role is also stored in `auth.users.app_metadata.role` (user cannot modify) as authoritative source; profiles.role is a mirror for JOIN queries.
 - **D-13:** `schools` table includes `subscription_tier` field (default: `free`) for Phase 60 subscription gate — schema created now, logic implemented later
+- **D-13a:** Teacher signup flow creates the teacher's school and first class atomically in the signup server action: form collects email + password + Name + Schulname + Klassenname. This resolves RESEARCH Q1 (no orphaned teachers without a class). Additional classes can be added later via teacher dashboard (Phase 50).
 
 ### Route structure and role-based routing
 - **D-14:** Next.js App Router with route groups: `(child)` for child-facing pages, `(teacher)` for teacher dashboard
