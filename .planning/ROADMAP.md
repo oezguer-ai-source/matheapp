@@ -66,7 +66,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   4. A progress_entry record is written to the database for every answered exercise (correct or incorrect, with operation type, grade, and timestamp)
 **Plans**: 2 plans
 **Plan list**:
-- [ ] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
+- [x] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
 - [ ] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
 
 **Waves**:
@@ -164,7 +164,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
-| 20. Exercise Engine | 0/2 | Not started | - |
+| 20. Exercise Engine | 1/2 | In Progress|  |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |

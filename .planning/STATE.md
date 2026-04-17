@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: executing
-stopped_at: Completed 10-09-PLAN.md
-last_updated: "2026-04-17T23:33:09.659Z"
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-04-17T23:54:52.765Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** Kinder uben Mathe spielerisch und mit Motivation durch ein Belohnungssystem -- Lehrkrafte sehen den Lernfortschritt.
-**Current focus:** Phase 10 — foundation
+**Current focus:** Phase 20 — exercise-engine
 
 ## Current Position
 
-Phase: 20
-Plan: Not started
+Phase: 20 (exercise-engine) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-04-17
 
@@ -59,6 +59,7 @@ Progress: [..........] 0%
 | Phase 10 P05 | 4min | 2 tasks | 10 files |
 | Phase 10 P06 | 5min | 2 tasks | 5 files |
 | Phase 10 P09 | 5min | 3 tasks | 7 files |
+| Phase 20 P01 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Middleware routing tests skip gracefully via isServerUp() when no dev server is running
 - [Phase 10]: RLS test creates second child in same class to prove cross-child progress isolation
 - [Phase 10]: All Phase-10 SC-1 through SC-5 success criteria covered by automated tests (32 total)
+- [Phase 20]: Division uses answer-first generation (pick divisor+quotient, compute dividend) for remainder-free results
+- [Phase 20]: Subtraction swaps operands to guarantee non-negative results
+- [Phase 20]: Divisor minimum is 2 to avoid trivial divisions and division-by-zero
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T19:05:07.731Z
-Stopped at: Completed 10-09-PLAN.md
+Last session: 2026-04-17T23:54:52.762Z
+Stopped at: Completed 20-01-PLAN.md
 Resume file: None
