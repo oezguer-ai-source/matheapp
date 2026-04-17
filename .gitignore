@@ -1,10 +1,19 @@
+# dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
 # Next.js
 .next/
 out/
 build/
-node_modules/
 
-# Environment
+# Environment (keep .env.example committed as contract)
 .env.local
 .env*.local
 
@@ -16,3 +25,20 @@ test-results/
 # Supabase (local state, generated types)
 supabase/.branches/
 supabase/.temp/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
