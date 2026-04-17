@@ -64,6 +64,14 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/lehrer/dashboard";
       return NextResponse.redirect(url);
     }
+
+    // Deny access for users with no recognized role (e.g., created via direct
+    // Supabase auth call without app_metadata). Redirect to login.
+    if (role !== "child" && role !== "teacher") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
   }
 
   // MUST return supabaseResponse to preserve cookies.
