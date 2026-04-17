@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: executing
-stopped_at: Completed 10-05-PLAN.md
-last_updated: "2026-04-17T15:27:46.700Z"
+stopped_at: Completed 10-06-PLAN.md
+last_updated: "2026-04-17T15:35:29.134Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 ## Current Position
 
 Phase: 10 (foundation) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-04-17
 
@@ -57,6 +57,7 @@ Progress: [..........] 0%
 | Phase 10 P03 | 4min | 2 tasks | 14 files |
 | Phase 10 P04 | 3min | 2 tasks | 10 files |
 | Phase 10 P05 | 4min | 2 tasks | 10 files |
+| Phase 10 P06 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Admin client uses requireEnv() for runtime safety; PIN padding formula: {pin}-{class_id_first_8}
 - [Phase 10]: gen_random_uuid() over uuid_generate_v4() for Supabase Cloud compatibility (uuid-ossp in extensions schema)
 - [Phase 10]: RLS uses SECURITY DEFINER helpers in private schema; all auth.uid() wrapped as (select auth.uid()) for performance
+- [Phase 10]: Used zod v4 with transform+pipe for username lowercasing in childLoginSchema
+- [Phase 10]: admin.createUser (not signUp) ensures app_metadata.role=teacher set atomically at INSERT time for Plan 05 trigger
+- [Phase 10]: Teacher signup atomically creates school + class + updates profile (D-13a) with rollback on failure
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T15:27:46.698Z
-Stopped at: Completed 10-05-PLAN.md
+Last session: 2026-04-17T15:35:29.132Z
+Stopped at: Completed 10-06-PLAN.md
 Resume file: None
