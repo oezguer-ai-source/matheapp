@@ -5,10 +5,12 @@
 --   The nullable pin_hint column is a teacher-visible hint (e.g. "Geburtstag
 --   deiner Schwester") — NEVER the PIN itself. Default null.
 
-create extension if not exists "uuid-ossp";
+-- gen_random_uuid() is built-in to PostgreSQL 14+ (Supabase default).
+-- No extension needed — uuid-ossp is installed in the extensions schema on
+-- Supabase Cloud and gen_random_uuid() would require schema-qualification.
 
 create table public.schools (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   subscription_tier text not null default 'free'
     check (subscription_tier in ('free', 'grundschule', 'foerderung', 'experte')),
@@ -16,7 +18,7 @@ create table public.schools (
 );
 
 create table public.classes (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schools(id) on delete cascade,
   teacher_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -35,7 +37,7 @@ create table public.profiles (
 );
 
 create table public.progress_entries (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   child_id uuid not null references auth.users(id) on delete cascade,
   operation_type text not null
     check (operation_type in ('addition', 'subtraktion', 'multiplikation', 'division')),
