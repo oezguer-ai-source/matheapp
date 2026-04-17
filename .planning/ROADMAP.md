@@ -14,7 +14,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - Integer phases (10, 20, 30...): Planned milestone work
 - Decimal phases (e.g., 20.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 10: Foundation** - Project scaffolding, Supabase auth with child-appropriate login, database schema with RLS, role-based routing
+- [x] **Phase 10: Foundation** - Project scaffolding, Supabase auth with child-appropriate login, database schema with RLS, role-based routing (completed 2026-04-17)
 - [ ] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers
 - [ ] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback
 - [ ] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers
@@ -44,7 +44,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
 - [x] 10-07-PLAN.md — /login + /registrieren pages with role toggle, PIN grid, three forms
 - [x] 10-08-PLAN.md — Next.js middleware.ts + stub /kind/dashboard + /lehrer/dashboard
-- [ ] 10-09-PLAN.md — E2E + integration tests (SC-1 through SC-5) + human UI signoff
+- [x] 10-09-PLAN.md — E2E + integration tests (SC-1 through SC-5) + human UI signoff
 
 **Waves**:
 - Wave 1: 10-01 (env setup checkpoint)
@@ -156,7 +156,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 10. Foundation | 8/9 | In Progress|  |
+| 10. Foundation | 9/9 | Complete   | 2026-04-17 |
 | 20. Exercise Engine | 0/TBD | Not started | - |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
