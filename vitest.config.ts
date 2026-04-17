@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react() as any],
   css: {
     // Disable PostCSS processing in tests — Tailwind v4's PostCSS plugin
     // is incompatible with Vitest's bundled Vite. Tests don't need CSS.
