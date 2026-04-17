@@ -11,12 +11,12 @@ export const metadata: Metadata = {
 
 export default async function LehrerDashboardPage() {
   const supabase = await createClient();
-  const { data: claimsResult } = await supabase.auth.getClaims();
-  if (!claimsResult?.claims) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
     redirect("/login");
   }
 
-  const userId = claimsResult.claims.sub;
+  const userId = user.id;
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, role")
