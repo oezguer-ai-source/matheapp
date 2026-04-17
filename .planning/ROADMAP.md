@@ -38,7 +38,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plan list**:
 - [x] 10-01-PLAN.md — Supabase cloud project + .env.local env-var contract (checkpoint)
 - [x] 10-02-PLAN.md — Next.js 15.2 scaffolding + shadcn/ui init + route groups
-- [ ] 10-03-PLAN.md — Vitest + Playwright Wave-0 infrastructure (all test files scaffolded)
+- [x] 10-03-PLAN.md — Vitest + Playwright Wave-0 infrastructure (all test files scaffolded)
 - [ ] 10-04-PLAN.md — Supabase client/server/middleware/admin helpers + PIN-email mapping
 - [ ] 10-05-PLAN.md — DB migrations (schema + RLS + teacher trigger) + [BLOCKING] supabase db push
 - [ ] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
@@ -156,7 +156,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 10. Foundation | 2/9 | In Progress|  |
+| 10. Foundation | 3/9 | In Progress|  |
 | 20. Exercise Engine | 0/TBD | Not started | - |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
