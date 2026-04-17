@@ -44,8 +44,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (claims) {
-    const role = (claims as { app_metadata?: { role?: "child" | "teacher" } })
+    const role = (claims as { app_metadata?: { role?: string } })
       .app_metadata?.role;
+
+    // Redirect authenticated users away from public pages (login, registration, landing).
+    if (isPublicPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = role === "child" ? "/kind/dashboard" : "/lehrer/dashboard";
+      return NextResponse.redirect(url);
+    }
 
     if (role === "child" && pathname.startsWith("/lehrer")) {
       const url = request.nextUrl.clone();
