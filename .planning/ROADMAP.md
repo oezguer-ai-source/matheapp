@@ -41,7 +41,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] 10-03-PLAN.md — Vitest + Playwright Wave-0 infrastructure (all test files scaffolded)
 - [x] 10-04-PLAN.md — Supabase client/server/middleware/admin helpers + PIN-email mapping
 - [x] 10-05-PLAN.md — DB migrations (schema + RLS + teacher trigger) + [BLOCKING] supabase db push
-- [ ] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
+- [x] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
 - [ ] 10-07-PLAN.md — /login + /registrieren pages with role toggle, PIN grid, three forms
 - [ ] 10-08-PLAN.md — Next.js middleware.ts + stub /kind/dashboard + /lehrer/dashboard
 - [ ] 10-09-PLAN.md — E2E + integration tests (SC-1 through SC-5) + human UI signoff
@@ -156,7 +156,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 10. Foundation | 5/9 | In Progress|  |
+| 10. Foundation | 6/9 | In Progress|  |
 | 20. Exercise Engine | 0/TBD | Not started | - |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
