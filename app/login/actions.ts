@@ -29,6 +29,9 @@ export async function childLogin(
   // Per RESEARCH Assumption A2 (ACCEPTED): username -> class_id lookup uses the
   // ADMIN client (service-role key, bypasses RLS). A permissive anon-readable
   // display_name policy would enable user enumeration attacks.
+  // TODO: If two children in different classes share the same display_name,
+  // maybeSingle() returns an error (PGRST116: multiple rows). Consider adding
+  // a class_id disambiguator to the login flow or enforcing global username uniqueness.
   const admin = createAdminClient();
   const { data: profile, error: lookupError } = await admin
     .from("profiles")
