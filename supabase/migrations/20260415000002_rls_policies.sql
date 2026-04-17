@@ -114,8 +114,10 @@ using (
 -- 7. schools INSERT policy (Phase 10: teacher creates their own school during signup).
 -- Without this, the teacherSignup server action's school INSERT would be blocked by RLS
 -- when using a user-context client. The admin client (service-role) bypasses RLS, but we
--- also want the row-level guard to be explicit. Constrain INSERT to authenticated users:
+-- also want the row-level guard to be explicit. Constrain INSERT to teachers only:
 create policy "teacher_inserts_own_schools"
 on public.schools for insert
 to authenticated
-with check ( true );
+with check (
+  (select private.user_role()) = 'teacher'
+);
