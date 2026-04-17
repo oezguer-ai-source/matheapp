@@ -64,7 +64,14 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   2. Each exercise set starts at easy difficulty and progresses to harder problems based on consecutive correct answers
   3. Answer validation happens server-side only -- the client sends the raw answer, the server determines correctness and awards points
   4. A progress_entry record is written to the database for every answered exercise (correct or incorrect, with operation type, grade, and timestamp)
-**Plans**: TBD
+**Plans**: 2 plans
+**Plan list**:
+- [ ] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
+- [ ] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
+
+**Waves**:
+- Wave 1: 20-01 (pure functions + unit tests, no DB dependency)
+- Wave 2: 20-02 (Server Actions + Supabase integration, depends on 20-01)
 
 ### Phase 30: Child Dashboard & Learning Session
 **Goal**: Children can see their points and progress, start exercise sessions, answer questions with age-appropriate UI, and receive immediate visual feedback
@@ -157,7 +164,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
-| 20. Exercise Engine | 0/TBD | Not started | - |
+| 20. Exercise Engine | 0/2 | Not started | - |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
