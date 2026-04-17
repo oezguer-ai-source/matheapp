@@ -1,16 +1,35 @@
 import { test, expect } from "@playwright/test";
+import {
+  seedTestData,
+  cleanupTestData,
+  TEST_TEACHER,
+} from "../fixtures/supabase";
+
+test.beforeAll(async () => {
+  await seedTestData();
+});
+
+test.afterAll(async () => {
+  await cleanupTestData();
+});
 
 test.describe("SC-2 — Teacher login flow", () => {
-  test.skip("teacher logs in", async ({ page }) => {
-    // Implemented in Plan 10.
-    // Flow:
-    //   1. Visit /login
-    //   2. Click "Lehrkraft" role toggle
-    //   3. Fill E-Mail = TEST_TEACHER.email
-    //   4. Fill Passwort = TEST_TEACHER.password
-    //   5. Click "Einloggen"
-    //   6. Expect URL to be /lehrer/dashboard
-    //   7. Expect page to contain "Willkommen, E2E Test Teacher"
-    expect(true).toBe(true);
+  test("teacher logs in", async ({ page }) => {
+    await page.goto("/login");
+
+    await page.getByRole("tab", { name: "Lehrkraft" }).click();
+
+    await page.getByLabel("E-Mail").fill(TEST_TEACHER.email);
+    await page.getByLabel("Passwort", { exact: true }).fill(TEST_TEACHER.password);
+
+    await page.getByRole("button", { name: "Einloggen" }).click();
+
+    await page.waitForURL("**/lehrer/dashboard", { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/lehrer\/dashboard$/);
+    await expect(
+      page.getByRole("heading", {
+        name: `Willkommen, ${TEST_TEACHER.name}`,
+      })
+    ).toBeVisible();
   });
 });
