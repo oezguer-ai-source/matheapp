@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: executing
-stopped_at: Completed 10-03-PLAN.md (Test infrastructure + Nyquist Wave-0)
-last_updated: "2026-04-17T15:14:13.570Z"
+stopped_at: Completed 10-04-PLAN.md
+last_updated: "2026-04-17T15:20:11.808Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
-  percent: 33
+  completed_plans: 4
+  percent: 44
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 ## Current Position
 
 Phase: 10 (foundation) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-04-17
 
@@ -55,6 +55,7 @@ Progress: [..........] 0%
 | Phase 10 P01 | 15min | 2 tasks | 2 files |
 | Phase 10 P02 | 3min | 2 tasks | 17 files |
 | Phase 10 P03 | 4min | 2 tasks | 14 files |
+| Phase 10 P04 | 3min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Supabase project hosted in EU/Frankfurt on Free tier; leaked-password protection OFF to support PIN padding scheme
 - [Phase 10]: shadcn/ui New York style with Slate base color per UI-SPEC; route-group boundary (child vs teacher) established at scaffold time
 - [Phase 10]: Downgraded @vitejs/plugin-react v6->v4 for CJS compat; disabled PostCSS in Vitest to avoid Tailwind v4 conflict
+- [Phase 10]: Middleware uses getClaims() not getSession() per RESEARCH.md security guidance
+- [Phase 10]: Admin client uses requireEnv() for runtime safety; PIN padding formula: {pin}-{class_id_first_8}
 
 ### Pending Todos
 
@@ -89,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T15:14:13.567Z
-Stopped at: Completed 10-03-PLAN.md (Test infrastructure + Nyquist Wave-0)
+Last session: 2026-04-17T15:20:11.806Z
+Stopped at: Completed 10-04-PLAN.md
 Resume file: None
