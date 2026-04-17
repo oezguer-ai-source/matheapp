@@ -96,8 +96,9 @@ export async function teacherSignup(
       if (classId) await admin.from("classes").delete().eq("id", classId);
       if (schoolId) await admin.from("schools").delete().eq("id", schoolId);
       await admin.auth.admin.deleteUser(teacherId);
-    } catch {
-      // Best-effort cleanup; surface the generic error either way.
+    } catch (rollbackErr) {
+      // Log rollback failure for operational visibility — orphaned rows may need manual cleanup.
+      console.error("[teacherSignup] rollback failed:", rollbackErr);
     }
     return { error: GENERIC_SIGNUP_ERROR };
   }
