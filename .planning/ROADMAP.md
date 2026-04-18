@@ -42,7 +42,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] 10-04-PLAN.md — Supabase client/server/middleware/admin helpers + PIN-email mapping
 - [x] 10-05-PLAN.md — DB migrations (schema + RLS + teacher trigger) + [BLOCKING] supabase db push
 - [x] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
-- [x] 10-07-PLAN.md — /login + /registrieren pages with role toggle, PIN grid, three forms
+- [x] 10-07-PLAN.md ��� /login + /registrieren pages with role toggle, PIN grid, three forms
 - [x] 10-08-PLAN.md — Next.js middleware.ts + stub /kind/dashboard + /lehrer/dashboard
 - [x] 10-09-PLAN.md — E2E + integration tests (SC-1 through SC-5) + human UI signoff
 
@@ -66,7 +66,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   4. A progress_entry record is written to the database for every answered exercise (correct or incorrect, with operation type, grade, and timestamp)
 **Plans**: 2 plans
 **Plan list**:
-- [x] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
+- [x] 20-01-PLAN.md ��� TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
 - [x] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
 
 **Waves**:
@@ -104,7 +104,15 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   3. The mini-game is playable, fun for ages 6-10, and lasts 1-3 minutes (timeboxed scope: CSS/React-based or simple canvas game, no game engine)
   4. Playing the mini-game consumes points, requiring the child to solve more exercises to play again
   5. The mini-game does NOT award points or write to the progress store -- it is purely a reward
-**Plans**: TBD
+**Plans**: 3 plans
+**Plan list**:
+- [ ] 40-01-PLAN.md — DB-Migration (operation_type CHECK erweitern), Server Action startGameAction, /kind/spiel Punkt-Gating, Dashboard "Spiel starten"-Button
+- [ ] 40-02-PLAN.md — BalloonGame Client-Komponente: CSS-Animationen, Balloon, GameOverScreen, Game Loop mit Timer
+- [ ] 40-03-PLAN.md — Unit-Tests + Integration-Tests + E2E-Tests + visuelle Verifikation
+
+**Waves**:
+- Wave 1: 40-01, 40-02 (parallel: Backend/Gating + Frontend/Spiel, keine File-Ueberschneidung)
+- Wave 2: 40-03 (Tests + Human Verification, haengt von beiden Wave-1 Plans ab)
 **UI hint**: yes
 
 ### Phase 50: Teacher Dashboard
@@ -174,7 +182,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
-| 40. Mini-Game Reward | 0/TBD | Not started | - |
+| 40. Mini-Game Reward | 0/3 | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
