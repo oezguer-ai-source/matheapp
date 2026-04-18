@@ -18,7 +18,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers (completed 2026-04-18)
 - [x] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback (completed 2026-04-18)
 - [x] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers (completed 2026-04-18)
-- [ ] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking
+- [x] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking (completed 2026-04-18)
 - [ ] **Phase 60: Subscription Gate** - Simulated B2B subscription model with Klasse 4 content gated behind a tier check and upgrade prompt
 - [ ] **Phase 70: University Documentation** - Marktanalyse, Forschungsfrage, UML/BPMN diagrams, and technical implementation documentation
 
@@ -128,7 +128,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plan list**:
 - [x] 50-01-PLAN.md — shadcn/ui Table + Collapsible installieren, TypeScript-Typen, Server-Queries (Aggregation + RLS)
 - [x] 50-02-PLAN.md — Dashboard-Page: ClassTable mit Sortierung, expandierbare Detail-Ansicht, Farbcodierung, Inaktivitaets-Hervorhebung
-- [ ] 50-03-PLAN.md — Unit-Tests + Integration-Tests (RLS) + E2E-Tests + visuelle Verifikation
+- [x] 50-03-PLAN.md — Unit-Tests + Integration-Tests (RLS) + E2E-Tests + visuelle Verifikation
 
 **Waves**:
 - Wave 1: 50-01 (Daten-Layer: shadcn Komponenten + Typen + Queries)
@@ -192,6 +192,6 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
 | 40. Mini-Game Reward | 3/3 | Complete    | 2026-04-18 |
-| 50. Teacher Dashboard | 2/3 | In Progress|  |
+| 50. Teacher Dashboard | 3/3 | Complete    | 2026-04-18 |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
