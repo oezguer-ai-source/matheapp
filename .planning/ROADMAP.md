@@ -127,7 +127,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plans**: 3 plans
 **Plan list**:
 - [x] 50-01-PLAN.md — shadcn/ui Table + Collapsible installieren, TypeScript-Typen, Server-Queries (Aggregation + RLS)
-- [ ] 50-02-PLAN.md — Dashboard-Page: ClassTable mit Sortierung, expandierbare Detail-Ansicht, Farbcodierung, Inaktivitaets-Hervorhebung
+- [x] 50-02-PLAN.md — Dashboard-Page: ClassTable mit Sortierung, expandierbare Detail-Ansicht, Farbcodierung, Inaktivitaets-Hervorhebung
 - [ ] 50-03-PLAN.md — Unit-Tests + Integration-Tests (RLS) + E2E-Tests + visuelle Verifikation
 
 **Waves**:
@@ -192,6 +192,6 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
 | 40. Mini-Game Reward | 3/3 | Complete    | 2026-04-18 |
-| 50. Teacher Dashboard | 1/3 | In Progress|  |
+| 50. Teacher Dashboard | 2/3 | In Progress|  |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
