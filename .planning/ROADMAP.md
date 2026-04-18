@@ -106,8 +106,8 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   5. The mini-game does NOT award points or write to the progress store -- it is purely a reward
 **Plans**: 3 plans
 **Plan list**:
-- [ ] 40-01-PLAN.md — DB-Migration (operation_type CHECK erweitern), Server Action startGameAction, /kind/spiel Punkt-Gating, Dashboard "Spiel starten"-Button
-- [ ] 40-02-PLAN.md — BalloonGame Client-Komponente: CSS-Animationen, Balloon, GameOverScreen, Game Loop mit Timer
+- [x] 40-01-PLAN.md — DB-Migration (operation_type CHECK erweitern), Server Action startGameAction, /kind/spiel Punkt-Gating, Dashboard "Spiel starten"-Button
+- [x] 40-02-PLAN.md — BalloonGame Client-Komponente: CSS-Animationen, Balloon, GameOverScreen, Game Loop mit Timer
 - [ ] 40-03-PLAN.md — Unit-Tests + Integration-Tests + E2E-Tests + visuelle Verifikation
 
 **Waves**:
@@ -182,7 +182,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
-| 40. Mini-Game Reward | 0/3 | Not started | - |
+| 40. Mini-Game Reward | 2/3 | In Progress|  |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
