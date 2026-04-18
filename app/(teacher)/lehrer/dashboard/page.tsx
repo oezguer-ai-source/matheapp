@@ -37,15 +37,25 @@ export default async function LehrerDashboardPage() {
     redirect("/login");
   }
 
-  // Klassen-Name laden
+  // Klassen-Name und Abo-Status laden
   let className: string | null = null;
+  let schoolTier: string | null = null;
   if (profile.class_id) {
     const { data: classData } = await supabase
       .from("classes")
-      .select("name")
+      .select("name, school_id")
       .eq("id", profile.class_id)
       .maybeSingle();
     className = classData?.name ?? null;
+
+    if (classData?.school_id) {
+      const { data: schoolData } = await supabase
+        .from("schools")
+        .select("subscription_tier")
+        .eq("id", classData.school_id)
+        .maybeSingle();
+      schoolTier = schoolData?.subscription_tier ?? null;
+    }
   }
 
   // Schueler-Uebersicht laden
@@ -75,9 +85,20 @@ export default async function LehrerDashboardPage() {
         </form>
       </div>
 
-      {/* Klassen-Name */}
+      {/* Klassen-Name + Abo-Badge */}
       {className && (
-        <p className="text-lg text-slate-600 mb-6">{className}</p>
+        <div className="flex items-center gap-3 mb-6">
+          <p className="text-lg text-slate-600">{className}</p>
+          {schoolTier && (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              schoolTier === "free"
+                ? "bg-slate-100 text-slate-600"
+                : "bg-green-100 text-green-700"
+            }`}>
+              Abo: {schoolTier === "free" ? "Kostenlos" : schoolTier.charAt(0).toUpperCase() + schoolTier.slice(1)}
+            </span>
+          )}
+        </div>
       )}
 
       {students.length === 0 ? (
