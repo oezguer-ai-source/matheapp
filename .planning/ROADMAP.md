@@ -85,8 +85,8 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   5. The UI uses large text, bold colors, and touch-friendly targets appropriate for ages 6-10
 **Plans**: 3 plans
 **Plan list**:
-- [ ] 30-01-PLAN.md — Dashboard Server Component: theme colors, ProgressBar, DashboardStats, Supabase aggregate queries
-- [ ] 30-02-PLAN.md — Exercise Session Client Components: NumberPad, FeedbackOverlay, ExerciseSession state machine, ueben page
+- [x] 30-01-PLAN.md — Dashboard Server Component: theme colors, ProgressBar, DashboardStats, Supabase aggregate queries
+- [x] 30-02-PLAN.md — Exercise Session Client Components: NumberPad, FeedbackOverlay, ExerciseSession state machine, ueben page
 - [ ] 30-03-PLAN.md — E2E tests (dashboard + exercise session) + human visual verification checkpoint
 
 **Waves**:
@@ -173,7 +173,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
-| 30. Child Dashboard & Learning Session | 0/3 | Not started | - |
+| 30. Child Dashboard & Learning Session | 2/3 | In Progress|  |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
