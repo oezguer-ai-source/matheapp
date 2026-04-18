@@ -32,16 +32,15 @@ export default async function KindDashboardPage() {
     redirect("/login");
   }
 
-  // Aggregate query: total points + exercise count (T-30-01: RLS ensures child_id = auth.uid())
-  const { data: stats } = await supabase
+  // Fetch progress entries to compute totals (aggregate functions not available via PostgREST)
+  // T-30-01: RLS ensures child_id = auth.uid()
+  const { data: entries } = await supabase
     .from("progress_entries")
-    .select("points_earned.sum(), id.count()")
-    .eq("child_id", user.id)
-    .single();
+    .select("points_earned")
+    .eq("child_id", user.id);
 
-  // Pitfall: .sum() / .count() return null on empty result set
-  const totalPoints = stats?.sum ?? 0;
-  const exerciseCount = stats?.count ?? 0;
+  const totalPoints = (entries ?? []).reduce((sum, e) => sum + (e.points_earned ?? 0), 0);
+  const exerciseCount = (entries ?? []).length;
 
   return (
     <main className="min-h-dvh bg-white p-6 flex flex-col gap-6">
