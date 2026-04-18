@@ -166,6 +166,12 @@ export async function submitAnswerAction(input: {
 
   // Server re-computes correct answer from operands (Pattern 3)
   const correctAnswer = compute(operand1, operand2, operator as Operator);
+
+  // Guard: if division produced a non-integer, the exercise is invalid (WR-01)
+  if (operator === "/" && !Number.isInteger(correctAnswer)) {
+    return { error: "Ungueltige Aufgabe." };
+  }
+
   const correct = userAnswer === correctAnswer;
 
   const pointsEarned = calculatePoints(correct, currentDifficulty as Difficulty);
