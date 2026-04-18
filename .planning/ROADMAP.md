@@ -17,7 +17,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] **Phase 10: Foundation** - Project scaffolding, Supabase auth with child-appropriate login, database schema with RLS, role-based routing (completed 2026-04-17)
 - [x] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers (completed 2026-04-18)
 - [x] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback (completed 2026-04-18)
-- [ ] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers
+- [x] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers (completed 2026-04-18)
 - [ ] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking
 - [ ] **Phase 60: Subscription Gate** - Simulated B2B subscription model with Klasse 4 content gated behind a tier check and upgrade prompt
 - [ ] **Phase 70: University Documentation** - Marktanalyse, Forschungsfrage, UML/BPMN diagrams, and technical implementation documentation
@@ -108,7 +108,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plan list**:
 - [x] 40-01-PLAN.md — DB-Migration (operation_type CHECK erweitern), Server Action startGameAction, /kind/spiel Punkt-Gating, Dashboard "Spiel starten"-Button
 - [x] 40-02-PLAN.md — BalloonGame Client-Komponente: CSS-Animationen, Balloon, GameOverScreen, Game Loop mit Timer
-- [ ] 40-03-PLAN.md — Unit-Tests + Integration-Tests + E2E-Tests + visuelle Verifikation
+- [x] 40-03-PLAN.md — Unit-Tests + Integration-Tests + E2E-Tests + visuelle Verifikation
 
 **Waves**:
 - Wave 1: 40-01, 40-02 (parallel: Backend/Gating + Frontend/Spiel, keine File-Ueberschneidung)
@@ -182,7 +182,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
-| 40. Mini-Game Reward | 2/3 | In Progress|  |
+| 40. Mini-Game Reward | 3/3 | Complete   | 2026-04-18 |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
