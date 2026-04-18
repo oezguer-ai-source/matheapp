@@ -150,3 +150,34 @@ sequenceDiagram
 **Erlaeuterung:**
 
 Die Uebungssession folgt einem sicherheitsbewussten Architekturmuster: Der Server sendet die Aufgabe ohne korrekte Antwort an den Client (Schutz vor Manipulation im Browser). Bei der Abgabe berechnet der Server die korrekte Antwort eigenstaendig aus den Operanden neu und validiert zusaetzlich, dass die Operanden zur Klassenstufe und Schwierigkeit passen (Schutz vor Trivialaufgaben-Einschleusung). Die Schwierigkeit passt sich automatisch an die Leistung des Kindes an: Nach mehreren korrekten Antworten in Folge steigt sie, nach mehreren Fehlern sinkt sie.
+
+---
+
+## 4. BPMN-Prozessdiagramm: Uebungsprozess mit Gamification-Loop
+
+Das folgende Prozessdiagramm bildet den vollstaendigen Uebungsablauf als BPMN-aehnliches Flussdiagramm ab. Es zeigt den Kern-Loop der Aufgabenbearbeitung sowie das Gamification-Gate, das den Zugang zum Belohnungs-Minispiel steuert.
+
+```mermaid
+flowchart TD
+    Start((Start)) --> Generate[Aufgabe generieren]
+    Generate --> Display[Aufgabe anzeigen]
+    Display --> Input[Antwort eingeben]
+    Input --> Check{Korrekt?}
+    Check -->|Ja| Points[Punkte vergeben]
+    Check -->|Nein| ShowCorrect[Korrekte Antwort zeigen]
+    Points --> Difficulty[Schwierigkeit anpassen]
+    ShowCorrect --> NextQ[Naechste Aufgabe]
+    Difficulty --> Threshold{Punkte-Schwelle erreicht?}
+    Threshold -->|Nein| NextQ
+    NextQ --> Generate
+    Threshold -->|Ja| Unlock[Mini-Game freischalten]
+    Unlock --> Game[Mini-Game spielen]
+    Game --> Reset[Punkte zuruecksetzen]
+    Reset --> End((Ende))
+```
+
+**Erlaeuterung des Prozessablaufs:**
+
+Der **Kern-Loop** der Anwendung folgt dem Zyklus: Aufgabe generieren, anzeigen, Antwort entgegennehmen, auswerten und die naechste Aufgabe vorbereiten. Dieser Loop wiederholt sich kontinuierlich waehrend einer Uebungssession. Bei jeder korrekt geloesten Aufgabe werden Punkte als **Fortschrittsindikator** vergeben, deren Hoehe von der aktuellen Schwierigkeitsstufe abhaengt (hoehere Schwierigkeit ergibt mehr Punkte).
+
+Das **Belohnungs-Gate** prueft nach jeder Punktevergabe, ob die gesammelte Punktzahl einen definierten Schwellenwert erreicht hat. Erst wenn diese Schwelle ueberschritten ist, wird das Minispiel als Belohnung freigeschaltet. Dieser Mechanismus stellt sicher, dass das Kind ausreichend geuebt hat, bevor es die Belohnung erhaelt. Die **Schwierigkeits-Adaption** passt sich automatisch an die Leistung des Kindes an: Nach mehreren korrekten Antworten in Folge steigt die Schwierigkeit, nach mehreren Fehlern wird sie reduziert, um Frustration zu vermeiden und den Lerneffekt zu maximieren.
