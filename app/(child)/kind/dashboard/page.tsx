@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButtonChild } from "@/components/child/logout-button";
 import { DashboardStats, ProgressBar } from "@/components/child/dashboard-stats";
+import { MINIGAME_THRESHOLD } from "@/lib/config/rewards";
 
 export const metadata: Metadata = {
   title: "Matheapp -- Startseite",
@@ -59,6 +60,19 @@ export default async function KindDashboardPage() {
       >
         Aufgaben starten
       </Link>
+
+      {totalPoints >= MINIGAME_THRESHOLD ? (
+        <Link
+          href="/kind/spiel"
+          className="h-16 flex items-center justify-center rounded-2xl bg-child-yellow text-slate-900 text-3xl font-semibold hover:opacity-90 focus:ring-4 focus:ring-child-yellow/50 focus:ring-offset-2 focus:outline-none"
+        >
+          Spiel starten
+        </Link>
+      ) : (
+        <div className="h-16 flex items-center justify-center rounded-2xl bg-slate-200 text-slate-400 text-3xl font-semibold cursor-not-allowed">
+          Spiel starten
+        </div>
+      )}
 
       <div className="mt-auto">
         <LogoutButtonChild />
