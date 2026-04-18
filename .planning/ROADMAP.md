@@ -19,7 +19,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback (completed 2026-04-18)
 - [x] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers (completed 2026-04-18)
 - [x] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking (completed 2026-04-18)
-- [ ] **Phase 60: Subscription Gate** - Simulated B2B subscription model with Klasse 4 content gated behind a tier check and upgrade prompt
+- [x] **Phase 60: Subscription Gate** - Simulated B2B subscription model with Klasse 4 content gated behind a tier check and upgrade prompt (completed 2026-04-18)
 - [ ] **Phase 70: University Documentation** - Marktanalyse, Forschungsfrage, UML/BPMN diagrams, and technical implementation documentation
 
 ## Phase Details
@@ -148,8 +148,8 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   5. A demo/test account exists that can bypass the gate for evaluation purposes
 **Plans**: 2 plans
 **Plan list**:
-- [ ] 60-01-PLAN.md — DB-Migration (demo-Tier + Kind-RLS), Subscription-Query-Helper, Gate in ueben-Page, Upgrade-Seite mit Server Action, Teacher-Badge
-- [ ] 60-02-PLAN.md — Integration-Tests + E2E-Tests + visuelle Verifikation
+- [x] 60-01-PLAN.md — DB-Migration (demo-Tier + Kind-RLS), Subscription-Query-Helper, Gate in ueben-Page, Upgrade-Seite mit Server Action, Teacher-Badge
+- [x] 60-02-PLAN.md — Integration-Tests + E2E-Tests + visuelle Verifikation
 
 **Waves**:
 - Wave 1: 60-01 (Backend + Frontend: Migration, RLS, Gate, Upgrade-Seite, Teacher-Badge)
@@ -200,5 +200,5 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
 | 40. Mini-Game Reward | 3/3 | Complete    | 2026-04-18 |
 | 50. Teacher Dashboard | 3/3 | Complete    | 2026-04-18 |
-| 60. Subscription Gate | 0/2 | Not started | - |
+| 60. Subscription Gate | 2/2 | Complete    | 2026-04-18 |
 | 70. University Documentation | 0/TBD | Not started | - |

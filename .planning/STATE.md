@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: MVP
 status: executing
 stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-04-18T14:48:19.852Z"
+last_updated: "2026-04-18T15:17:36.372Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 20
-  completed_plans: 20
+  completed_phases: 6
+  total_plans: 22
+  completed_plans: 22
   percent: 100
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** Kinder uben Mathe spielerisch und mit Motivation durch ein Belohnungssystem -- Lehrkrafte sehen den Lernfortschritt.
-**Current focus:** Phase 50 — teacher-dashboard
+**Current focus:** Phase 60 — subscription-gate
 
 ## Current Position
 
-Phase: 60
+Phase: 70
 Plan: Not started
-Status: Executing Phase 50
+Status: Executing Phase 60
 Last activity: 2026-04-18
 
 Progress: [..........] 0%
@@ -36,7 +36,7 @@ Progress: [..........] 0%
 
 **Velocity:**
 
-- Total plans completed: 20
+- Total plans completed: 22
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -49,6 +49,7 @@ Progress: [..........] 0%
 | 30 | 3 | - | - |
 | 40 | 3 | - | - |
 | 50 | 3 | - | - |
+| 60 | 2 | - | - |
 
 **Recent Trend:**
 
