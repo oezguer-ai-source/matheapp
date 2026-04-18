@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MINIGAME_THRESHOLD } from "@/lib/config/rewards";
-import BalloonGame from "@/components/child/balloon-game";
+import { BalloonGame } from "@/components/child/balloon-game";
 
 export const metadata: Metadata = {
   title: "Matheapp -- Ballonplatzen",
