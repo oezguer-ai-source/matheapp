@@ -146,7 +146,14 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   3. The upgrade prompt displays simulated subscription packages with pricing (no real payment)
   4. A "simulated checkout" button sets the school's tier to paid in the database, immediately unlocking Klasse 4 content
   5. A demo/test account exists that can bypass the gate for evaluation purposes
-**Plans**: TBD
+**Plans**: 2 plans
+**Plan list**:
+- [ ] 60-01-PLAN.md — DB-Migration (demo-Tier + Kind-RLS), Subscription-Query-Helper, Gate in ueben-Page, Upgrade-Seite mit Server Action, Teacher-Badge
+- [ ] 60-02-PLAN.md — Integration-Tests + E2E-Tests + visuelle Verifikation
+
+**Waves**:
+- Wave 1: 60-01 (Backend + Frontend: Migration, RLS, Gate, Upgrade-Seite, Teacher-Badge)
+- Wave 2: 60-02 (Tests + Human Verification, haengt von 60-01 ab)
 **UI hint**: yes
 
 ### Phase 70: University Documentation
@@ -193,5 +200,5 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
 | 40. Mini-Game Reward | 3/3 | Complete    | 2026-04-18 |
 | 50. Teacher Dashboard | 3/3 | Complete    | 2026-04-18 |
-| 60. Subscription Gate | 0/TBD | Not started | - |
+| 60. Subscription Gate | 0/2 | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
