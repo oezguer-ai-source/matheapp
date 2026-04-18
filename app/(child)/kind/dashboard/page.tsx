@@ -1,41 +1,67 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButtonChild } from "@/components/child/logout-button";
+import { DashboardStats, ProgressBar } from "@/components/child/dashboard-stats";
 
 export const metadata: Metadata = {
-  title: "Matheapp — Startseite",
+  title: "Matheapp -- Startseite",
 };
 
 export default async function KindDashboardPage() {
   const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
   if (userError || !user) {
     redirect("/login");
   }
 
-  const userId = user.id;
+  // Fetch profile with grade_level
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, role")
-    .eq("user_id", userId)
+    .select("display_name, grade_level, role")
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  // Middleware already redirects non-child users away, but belt-and-braces:
+  // Belt-and-braces role check (middleware already guards)
   if (!profile || profile.role !== "child") {
     redirect("/login");
   }
 
-  return (
-    <main className="min-h-dvh bg-white p-8 flex flex-col">
-      <h1 className="text-4xl font-semibold text-slate-900">
-        Hallo, {profile.display_name}!
-      </h1>
-      <p className="text-xl text-slate-600 mt-4">
-        Bald kannst du hier rechnen und Punkte sammeln.
-      </p>
+  // Aggregate query: total points + exercise count (T-30-01: RLS ensures child_id = auth.uid())
+  const { data: stats } = await supabase
+    .from("progress_entries")
+    .select("points_earned.sum(), id.count()")
+    .eq("child_id", user.id)
+    .single();
 
-      <div className="mt-auto lg:self-end">
+  // Pitfall: .sum() / .count() return null on empty result set
+  const totalPoints = stats?.sum ?? 0;
+  const exerciseCount = stats?.count ?? 0;
+
+  return (
+    <main className="min-h-dvh bg-white p-6 flex flex-col gap-6">
+      <DashboardStats
+        totalPoints={totalPoints}
+        exerciseCount={exerciseCount}
+        gradeLevel={profile.grade_level ?? 1}
+        displayName={profile.display_name ?? "Kind"}
+      />
+
+      <ProgressBar currentPoints={totalPoints} />
+
+      <Link
+        href="/kind/ueben"
+        className="h-16 flex items-center justify-center rounded-2xl bg-child-green text-white text-3xl font-semibold hover:opacity-90 focus:ring-4 focus:ring-child-green/50 focus:ring-offset-2 focus:outline-none"
+      >
+        Aufgaben starten
+      </Link>
+
+      <div className="mt-auto">
         <LogoutButtonChild />
       </div>
     </main>
