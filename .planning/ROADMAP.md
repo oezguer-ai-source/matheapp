@@ -42,7 +42,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - [x] 10-04-PLAN.md — Supabase client/server/middleware/admin helpers + PIN-email mapping
 - [x] 10-05-PLAN.md — DB migrations (schema + RLS + teacher trigger) + [BLOCKING] supabase db push
 - [x] 10-06-PLAN.md — Zod schemas + Server Actions (childLogin, teacherLogin, teacherSignup, logoutAction)
-- [x] 10-07-PLAN.md ��� /login + /registrieren pages with role toggle, PIN grid, three forms
+- [x] 10-07-PLAN.md — /login + /registrieren pages with role toggle, PIN grid, three forms
 - [x] 10-08-PLAN.md — Next.js middleware.ts + stub /kind/dashboard + /lehrer/dashboard
 - [x] 10-09-PLAN.md — E2E + integration tests (SC-1 through SC-5) + human UI signoff
 
@@ -66,7 +66,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   4. A progress_entry record is written to the database for every answered exercise (correct or incorrect, with operation type, grade, and timestamp)
 **Plans**: 2 plans
 **Plan list**:
-- [x] 20-01-PLAN.md ��� TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
+- [x] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
 - [x] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
 
 **Waves**:
@@ -124,7 +124,16 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
   2. Teacher can identify students who have not practiced recently (last activity date visible)
   3. Teacher can see accuracy broken down by operation type (addition, subtraction, multiplication, division) per student
   4. All data is scoped to the teacher's own class via RLS -- no cross-class data leakage
-**Plans**: TBD
+**Plans**: 3 plans
+**Plan list**:
+- [ ] 50-01-PLAN.md — shadcn/ui Table + Collapsible installieren, TypeScript-Typen, Server-Queries (Aggregation + RLS)
+- [ ] 50-02-PLAN.md — Dashboard-Page: ClassTable mit Sortierung, expandierbare Detail-Ansicht, Farbcodierung, Inaktivitaets-Hervorhebung
+- [ ] 50-03-PLAN.md — Unit-Tests + Integration-Tests (RLS) + E2E-Tests + visuelle Verifikation
+
+**Waves**:
+- Wave 1: 50-01 (Daten-Layer: shadcn Komponenten + Typen + Queries)
+- Wave 2: 50-02 (UI: Dashboard-Page mit interaktiver Tabelle, haengt von 50-01 ab)
+- Wave 3: 50-03 (Tests + Human Verification, haengt von 50-02 ab)
 **UI hint**: yes
 
 ### Phase 60: Subscription Gate
@@ -183,6 +192,6 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 3/3 | Complete    | 2026-04-18 |
 | 40. Mini-Game Reward | 3/3 | Complete    | 2026-04-18 |
-| 50. Teacher Dashboard | 0/TBD | Not started | - |
+| 50. Teacher Dashboard | 0/3 | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
 | 70. University Documentation | 0/TBD | Not started | - |
