@@ -7,7 +7,7 @@ export const generateExerciseSchema = z.object({
 
 export const submitAnswerSchema = z.object({
   exerciseId: z.string().uuid(),
-  operand1: z.number().int(),
+  operand1: z.number().int().min(1),
   operand2: z.number().int().min(1),
   operator: z.enum(["+", "-", "*", "/"]),
   userAnswer: z.number().int(),
