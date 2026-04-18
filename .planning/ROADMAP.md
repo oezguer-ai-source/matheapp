@@ -16,7 +16,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 
 - [x] **Phase 10: Foundation** - Project scaffolding, Supabase auth with child-appropriate login, database schema with RLS, role-based routing (completed 2026-04-17)
 - [x] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers (completed 2026-04-18)
-- [ ] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback
+- [x] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback (completed 2026-04-18)
 - [ ] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers
 - [ ] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking
 - [ ] **Phase 60: Subscription Gate** - Simulated B2B subscription model with Klasse 4 content gated behind a tier check and upgrade prompt
@@ -87,7 +87,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plan list**:
 - [x] 30-01-PLAN.md — Dashboard Server Component: theme colors, ProgressBar, DashboardStats, Supabase aggregate queries
 - [x] 30-02-PLAN.md — Exercise Session Client Components: NumberPad, FeedbackOverlay, ExerciseSession state machine, ueben page
-- [ ] 30-03-PLAN.md — E2E tests (dashboard + exercise session) + human visual verification checkpoint
+- [x] 30-03-PLAN.md — E2E tests (dashboard + exercise session) + human visual verification checkpoint
 
 **Waves**:
 - Wave 1: 30-01, 30-02 (parallel: dashboard + exercise session, no file overlap)
@@ -173,7 +173,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
 | 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
-| 30. Child Dashboard & Learning Session | 2/3 | In Progress|  |
+| 30. Child Dashboard & Learning Session | 3/3 | Complete   | 2026-04-18 |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
 | 60. Subscription Gate | 0/TBD | Not started | - |
