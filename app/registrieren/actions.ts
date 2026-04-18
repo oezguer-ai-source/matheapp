@@ -83,13 +83,22 @@ export async function teacherSignup(
     if (classError || !cls) throw classError ?? new Error("class insert failed");
     classId = cls.id;
 
-    // Step 3: Update the teacher's profile (auto-created by the Plan 05 trigger) with
-    // the new class_id so teacher_reads_own_classes + teacher_reads_class_profiles work.
-    const { error: profileUpdateError } = await admin
+    // Step 3: Upsert the teacher's profile. The DB trigger on auth.users may not fire
+    // on Supabase Cloud (GoTrue bypasses custom triggers), so we create-or-update the
+    // profile explicitly to guarantee it exists with the correct class_id.
+    const { error: profileUpsertError } = await admin
       .from("profiles")
-      .update({ class_id: classId })
-      .eq("user_id", teacherId);
-    if (profileUpdateError) throw profileUpdateError;
+      .upsert(
+        {
+          user_id: teacherId,
+          role: "teacher",
+          display_name: name,
+          class_id: classId,
+          grade_level: null,
+        },
+        { onConflict: "user_id" }
+      );
+    if (profileUpsertError) throw profileUpsertError;
   } catch {
     // Rollback: delete the class, school, and user so the operator can retry cleanly.
     try {
