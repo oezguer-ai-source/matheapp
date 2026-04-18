@@ -85,8 +85,8 @@ export default async function LehrerDashboardPage() {
         <Card>
           <CardContent>
             <p className="text-base text-slate-700">
-              Noch keine Sch&uuml;ler in Ihrer Klasse. Sch&uuml;ler werden
-              &uuml;ber den PIN-Login automatisch zugeordnet.
+              Noch keine Sch{"\u00fc"}ler in Ihrer Klasse. Sch{"\u00fc"}ler werden
+              {"\u00fc"}ber den PIN-Login automatisch zugeordnet.
             </p>
           </CardContent>
         </Card>
