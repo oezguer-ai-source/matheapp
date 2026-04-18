@@ -6,9 +6,11 @@ import { compute } from "@/lib/exercises/generators";
 import { computeNewDifficulty } from "@/lib/exercises/difficulty";
 import { calculatePoints } from "@/lib/exercises/points";
 import { OPERATOR_TO_TYPE } from "@/lib/exercises/types";
+import { RANGES } from "@/lib/exercises/config";
 import type {
   ClientExercise,
   Difficulty,
+  Grade,
   Operator,
   SubmitAnswerResult,
 } from "@/lib/exercises/types";
@@ -16,6 +18,60 @@ import {
   generateExerciseSchema,
   submitAnswerSchema,
 } from "@/lib/schemas/exercise";
+
+/**
+ * Validate that submitted operands are plausible for the child's grade and difficulty.
+ * Prevents trivial-exercise forgery (CR-01) without requiring server-side exercise storage.
+ */
+function validateOperandsForGrade(
+  operand1: number,
+  operand2: number,
+  operator: Operator,
+  grade: Grade,
+  difficulty: Difficulty
+): boolean {
+  const config = RANGES[grade][difficulty];
+
+  // Operator must be allowed for this grade/difficulty
+  if (!config.operators.includes(operator)) {
+    return false;
+  }
+
+  // Operands must be within the configured range (with allowances for generated patterns)
+  switch (operator) {
+    case "+":
+    case "*":
+      // Both operands must be in [min, max]
+      return (
+        operand1 >= config.min &&
+        operand1 <= config.max &&
+        operand2 >= config.min &&
+        operand2 <= config.max
+      );
+
+    case "-":
+      // Both operands in range, and operand1 >= operand2 (no negative results)
+      return (
+        operand1 >= config.min &&
+        operand1 <= config.max &&
+        operand2 >= config.min &&
+        operand2 <= config.max &&
+        operand1 >= operand2
+      );
+
+    case "/":
+      // Answer-first approach: divisor in [max(2,min), max], dividend = quotient * divisor
+      // Divisor must be >= 2, dividend must divide evenly
+      if (operand2 < 2 || operand2 > config.max) return false;
+      if (operand1 % operand2 !== 0) return false;
+      // Quotient must be >= 1 and divisor must be in valid range
+      const quotient = operand1 / operand2;
+      if (quotient < 1) return false;
+      // Dividend (operand1) can exceed config.max due to multiplication, but divisor must be in range
+      if (operand2 < Math.max(2, config.min)) return false;
+      return true;
+  }
+}
 
 export async function generateExerciseAction(
   grade: number,
@@ -93,6 +149,20 @@ export async function submitAnswerAction(input: {
     correctStreak,
     incorrectStreak,
   } = parsed.data;
+
+  // Validate operands against child's grade/difficulty to prevent trivial-exercise forgery (CR-01)
+  const grade = profile.grade_level as Grade;
+  if (
+    !validateOperandsForGrade(
+      operand1,
+      operand2,
+      operator as Operator,
+      grade,
+      currentDifficulty as Difficulty
+    )
+  ) {
+    return { error: "Ungueltige Aufgabe fuer diese Klassenstufe." };
+  }
 
   // Server re-computes correct answer from operands (Pattern 3)
   const correctAnswer = compute(operand1, operand2, operator as Operator);
