@@ -1,7 +1,8 @@
 -- Fix: infinite recursion in child_reads_own_school and child_upgrades_own_school policies
 -- Problem 1: The original policies JOINed schools within a policy ON schools (42P17).
 -- Problem 2: Subquery on classes was blocked by RLS (children can't read classes).
--- Fix: Use a SECURITY DEFINER helper that resolves school_id bypassing RLS on classes.
+-- Problem 3: Children had no RLS policy to read their own class (needed by subscription queries).
+-- Fix: Use SECURITY DEFINER helpers + add child_reads_own_class policy.
 
 -- 1. Create a SECURITY DEFINER helper to get the school_id for the current user
 CREATE OR REPLACE FUNCTION private.user_school_id()
@@ -41,4 +42,14 @@ USING (
 WITH CHECK (
   (SELECT private.user_role()) = 'child'
   AND id = (SELECT private.user_school_id())
+);
+
+-- 5. Add child_reads_own_class: children need to read their own class
+-- for getSchoolSubscriptionTier and upgradeSubscriptionAction to work via RLS
+CREATE POLICY "child_reads_own_class"
+ON public.classes FOR SELECT
+TO authenticated
+USING (
+  (SELECT private.user_role()) = 'child'
+  AND id = (SELECT private.user_class_id())
 );
