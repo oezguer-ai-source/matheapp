@@ -15,7 +15,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 - Decimal phases (e.g., 20.1): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 10: Foundation** - Project scaffolding, Supabase auth with child-appropriate login, database schema with RLS, role-based routing (completed 2026-04-17)
-- [ ] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers
+- [x] **Phase 20: Exercise Engine** - Server-side math exercise generation and validation for all four grade levels with difficulty tiers (completed 2026-04-18)
 - [ ] **Phase 30: Child Dashboard & Learning Session** - Child-facing UI for exercise sessions, points display, progress tracking, and immediate feedback
 - [ ] **Phase 40: Mini-Game Reward** - Points threshold gate and a single timeboxed mini-game unlocked as reward for correct answers
 - [ ] **Phase 50: Teacher Dashboard** - Class overview with per-student progress, accuracy by operation type, and activity tracking
@@ -67,7 +67,7 @@ Deliver an MVP math learning web app for German Grundschule (grades 1-4) within 
 **Plans**: 2 plans
 **Plan list**:
 - [x] 20-01-PLAN.md — TDD pure exercise engine: types, config, generators, difficulty, points (all 4 grades)
-- [ ] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
+- [x] 20-02-PLAN.md — Zod schemas + Server Actions (generateExercise, submitAnswer) + integration tests
 
 **Waves**:
 - Wave 1: 20-01 (pure functions + unit tests, no DB dependency)
@@ -164,7 +164,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
-| 20. Exercise Engine | 1/2 | In Progress|  |
+| 20. Exercise Engine | 2/2 | Complete   | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
