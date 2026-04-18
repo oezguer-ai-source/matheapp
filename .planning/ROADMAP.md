@@ -164,7 +164,7 @@ Note: Phase 50 and 60 could run in parallel after Phase 30 if desired (both depe
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 10. Foundation | 9/9 | Complete    | 2026-04-17 |
-| 20. Exercise Engine | 2/2 | Complete   | 2026-04-18 |
+| 20. Exercise Engine | 2/2 | Complete    | 2026-04-18 |
 | 30. Child Dashboard & Learning Session | 0/TBD | Not started | - |
 | 40. Mini-Game Reward | 0/TBD | Not started | - |
 | 50. Teacher Dashboard | 0/TBD | Not started | - |
