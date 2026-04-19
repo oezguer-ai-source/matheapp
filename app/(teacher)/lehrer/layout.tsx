@@ -19,18 +19,42 @@ export default async function LehrerLayout({
     redirect("/login");
   }
 
-  // Lehrer-Profil via Admin-Client (RLS-agnostisch) laden, damit fehlende
-  // Policies das Dashboard nicht unsichtbar kaputt machen.
+  // Lehrer-Profil via Admin-Client (RLS-agnostisch) laden.
   const admin = createAdminClient();
-  const { data: profile } = await admin
+  let { data: profile } = await admin
     .from("profiles")
     .select("display_name, role")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Wenn kein Profil existiert, NICHT zu /login redirecten — das würde mit
-  // dem Middleware-Redirect für authentifizierte Nutzer eine Schleife bauen
-  // (weiße Seite / ERR_TOO_MANY_REDIRECTS). Stattdessen inline informieren.
+  // Self-Healing: Wenn der Auth-Account als Lehrer markiert ist, aber das
+  // Profil (noch) fehlt — z. B. weil der Trigger aus 20260415000003 beim
+  // Signup nicht feuerte oder das Row später gelöscht wurde — legen wir es
+  // hier automatisch an. Verhindert das "Kein Lehrer-Profil"-Deadlock.
+  const authRole = (user.app_metadata as { role?: string } | undefined)?.role;
+
+  if ((!profile || profile.role !== "teacher") && authRole === "teacher") {
+    const displayName =
+      (user.user_metadata as { name?: string } | undefined)?.name ??
+      user.email?.split("@")[0] ??
+      "Lehrkraft";
+
+    const { error: upsertError } = await admin.from("profiles").upsert(
+      {
+        user_id: user.id,
+        role: "teacher",
+        display_name: displayName,
+        class_id: null,
+        grade_level: null,
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (!upsertError) {
+      profile = { display_name: displayName, role: "teacher" };
+    }
+  }
+
   if (!profile || profile.role !== "teacher") {
     return (
       <main className="min-h-dvh grid place-items-center bg-slate-50 p-6">
