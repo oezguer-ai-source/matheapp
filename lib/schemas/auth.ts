@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Matches the regex used in `buildSyntheticEmail` (post-lowercasing).
-const USERNAME_REGEX = /^[a-z0-9._-]+$/;
+const USERNAME_REGEX = /^[a-zäöüß0-9._-]+$/;
 
 export const childLoginSchema = z.object({
   username: z
@@ -29,8 +29,6 @@ export const teacherLoginSchema = z.object({
     .min(1, { message: "Bitte geben Sie Ihr Passwort ein." }),
 });
 
-// Per D-13a: teacher signup collects email + password + name + schoolName + className
-// so the Server Action can atomically provision the teacher's school + first class.
 export const teacherSignupSchema = z.object({
   name: z
     .string()
@@ -42,18 +40,6 @@ export const teacherSignupSchema = z.object({
   password: z
     .string()
     .min(8, { message: "Das Passwort muss mindestens 8 Zeichen lang sein." }),
-  schoolName: z
-    .string()
-    .min(2, { message: "Bitte geben Sie den Namen Ihrer Schule ein." })
-    .max(100, {
-      message: "Der Schulname darf höchstens 100 Zeichen lang sein.",
-    }),
-  className: z
-    .string()
-    .min(2, { message: "Bitte geben Sie den Namen Ihrer Klasse ein." })
-    .max(100, {
-      message: "Der Klassenname darf höchstens 100 Zeichen lang sein.",
-    }),
 });
 
 export type ChildLoginInput = z.infer<typeof childLoginSchema>;

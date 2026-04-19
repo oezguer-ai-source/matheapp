@@ -19,27 +19,27 @@ export function ChildLoginForm() {
       aria-labelledby="role-tab-child"
       className="flex flex-col gap-6"
     >
-      <p className="text-xl text-slate-700 text-center">
-        Melde dich an, um zu üben.
+      <p className="text-xl text-slate-600 text-center font-medium">
+        Melde dich an, um zu üben! 🚀
       </p>
 
       <label className="flex flex-col gap-2">
-        <span className="text-lg font-semibold text-slate-900">
-          Benutzername
+        <span className="text-lg font-bold text-slate-800">
+          👤 Benutzername
         </span>
         <input
           type="text"
           name="username"
           autoComplete="username"
-          placeholder="z. B. mia.k"
+          placeholder="z. B. mia.müller"
           required
-          className="h-14 px-4 text-4xl rounded-2xl border-2 border-slate-300 bg-white text-slate-900 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-200 focus:outline-none hover:border-slate-400"
+          className="h-14 px-4 text-2xl rounded-2xl border-2 border-orange-200 bg-orange-50/50 text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 focus:outline-none hover:border-orange-300 transition-all"
         />
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-lg font-semibold text-slate-900">
-          Dein PIN (4 Ziffern)
+        <span className="text-lg font-bold text-slate-800">
+          🔢 Dein PIN (4 Ziffern)
         </span>
         <PinInput value={pin} onChange={setPin} error={Boolean(state.error)} />
       </label>
@@ -47,9 +47,9 @@ export function ChildLoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-14 rounded-2xl bg-yellow-400 text-slate-900 text-4xl font-semibold hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 focus:ring-offset-2 focus:outline-none disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+        className="h-16 rounded-2xl bg-gradient-to-r from-orange-400 to-yellow-400 text-white text-2xl font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 hover:scale-[1.02] active:scale-[0.98] focus:ring-4 focus:ring-orange-300 focus:ring-offset-2 focus:outline-none disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
       >
-        {pending ? "Anmelden\u2026" : "Einloggen"}
+        {pending ? "Anmelden…" : "Los geht's! 🎯"}
       </button>
 
       {state.error && <AuthErrorAlertChild message={state.error} />}

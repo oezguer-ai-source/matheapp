@@ -1,4 +1,4 @@
-const USERNAME_REGEX = /^[a-z0-9._-]+$/;
+const USERNAME_REGEX = /^[a-zäöüß0-9._-]+$/;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PIN_REGEX = /^\d{4}$/;

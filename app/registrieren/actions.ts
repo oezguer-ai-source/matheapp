@@ -1,11 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { teacherSignupSchema } from "@/lib/schemas/auth";
 
-export type SignupActionState = { error: string | null };
+export type SignupActionState = { error: string | null; success?: boolean };
 
 const GENERIC_SIGNUP_ERROR =
   "Die Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut.";
@@ -20,38 +20,31 @@ export async function teacherSignup(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
-    schoolName: formData.get("schoolName"),
-    className: formData.get("className"),
   });
   if (!parsed.success) {
-    // Surface the first validation message so the UI can show the specific field error.
     const msg = parsed.error.issues[0]?.message ?? GENERIC_SIGNUP_ERROR;
     return { error: msg };
   }
 
-  const { name, email, password, schoolName, className } = parsed.data;
-  const admin = createAdminClient();
+  const { name, email, password } = parsed.data;
 
-  // Step 1: Create the auth user via the ADMIN API so app_metadata.role is set at
-  // INSERT time. This fires the Plan 05 trigger (`on_auth_user_created_create_teacher_profile`)
-  // which reads NEW.raw_app_meta_data->>'role' == 'teacher' and inserts the profile row.
-  //
-  // Why admin.createUser instead of the standard auth signUp flow:
-  //   The standard signUp() does NOT let the client set app_metadata. The trigger
-  //   checks raw_app_meta_data at INSERT time, so using signUp + a follow-up
-  //   admin.updateUserById() would race: the trigger fires BEFORE the metadata patch.
-  //   admin.createUser sets app_metadata atomically during the insert, eliminating the race.
-  const { data: createData, error: createError } =
-    await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // skip the email-verification step for MVP (per D-06)
-      app_metadata: { role: "teacher" },
-      user_metadata: { name },
-    });
+  // Step 1: Sign up via the public API. When enable_confirmations = true in
+  // Supabase config, this sends a confirmation email automatically.
+  const headersList = await headers();
+  const origin = headersList.get("origin") || "http://localhost:3000";
 
-  if (createError || !createData?.user) {
-    const lower = (createError?.message ?? "").toLowerCase();
+  const supabase = await createClient();
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name },
+      emailRedirectTo: `${origin}/auth/confirm`,
+    },
+  });
+
+  if (signUpError || !signUpData.user) {
+    const lower = (signUpError?.message ?? "").toLowerCase();
     const isDuplicate =
       lower.includes("already") ||
       lower.includes("registered") ||
@@ -59,70 +52,45 @@ export async function teacherSignup(
     return { error: isDuplicate ? DUPLICATE_EMAIL_ERROR : GENERIC_SIGNUP_ERROR };
   }
 
-  const teacherId = createData.user.id;
+  // Supabase returns an empty identities array for already-registered emails
+  // (to prevent user enumeration). Detect this case explicitly.
+  if (signUpData.user.identities?.length === 0) {
+    return { error: DUPLICATE_EMAIL_ERROR };
+  }
 
-  // Step 2: Atomically provision the teacher's school + first class (per D-13a).
-  // Both inserts use the admin client so RLS cannot block them mid-signup. If either
-  // step fails, we undo the created user to avoid orphans.
-  let schoolId: string | null = null;
-  let classId: string | null = null;
-  try {
-    const { data: school, error: schoolError } = await admin
-      .from("schools")
-      .insert({ name: schoolName, subscription_tier: "free" })
-      .select("id")
-      .single();
-    if (schoolError || !school) throw schoolError ?? new Error("school insert failed");
-    schoolId = school.id;
+  const teacherId = signUpData.user.id;
+  const admin = createAdminClient();
 
-    const { data: cls, error: classError } = await admin
-      .from("classes")
-      .insert({ name: className, school_id: schoolId, teacher_id: teacherId })
-      .select("id")
-      .single();
-    if (classError || !cls) throw classError ?? new Error("class insert failed");
-    classId = cls.id;
-
-    // Step 3: Upsert the teacher's profile. The DB trigger on auth.users may not fire
-    // on Supabase Cloud (GoTrue bypasses custom triggers), so we create-or-update the
-    // profile explicitly to guarantee it exists with the correct class_id.
-    const { error: profileUpsertError } = await admin
-      .from("profiles")
-      .upsert(
-        {
-          user_id: teacherId,
-          role: "teacher",
-          display_name: name,
-          class_id: classId,
-          grade_level: null,
-        },
-        { onConflict: "user_id" }
-      );
-    if (profileUpsertError) throw profileUpsertError;
-  } catch {
-    // Rollback: delete the class, school, and user so the operator can retry cleanly.
-    try {
-      if (classId) await admin.from("classes").delete().eq("id", classId);
-      if (schoolId) await admin.from("schools").delete().eq("id", schoolId);
-      await admin.auth.admin.deleteUser(teacherId);
-    } catch (rollbackErr) {
-      // Log rollback failure for operational visibility — orphaned rows may need manual cleanup.
-      console.error("[teacherSignup] rollback failed:", rollbackErr);
-    }
+  // Step 2: Set app_metadata.role via admin so middleware and RLS see the role.
+  const { error: metaError } = await admin.auth.admin.updateUserById(
+    teacherId,
+    { app_metadata: { role: "teacher" } }
+  );
+  if (metaError) {
+    await admin.auth.admin.deleteUser(teacherId);
     return { error: GENERIC_SIGNUP_ERROR };
   }
 
-  // Step 4: Sign the teacher in via the user-context client so cookies are set on
-  // the response. The dashboard loads immediately after redirect.
-  const supabase = await createClient();
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (signInError) {
-    // Auth user and school/class exist; the teacher can still log in manually.
+  // Step 3: Create the teacher profile (no class yet — classes are added later
+  // from the dashboard).
+  const { error: profileError } = await admin.from("profiles").upsert(
+    {
+      user_id: teacherId,
+      role: "teacher",
+      display_name: name,
+      class_id: null,
+      grade_level: null,
+    },
+    { onConflict: "user_id" }
+  );
+  if (profileError) {
+    await admin.auth.admin.deleteUser(teacherId);
     return { error: GENERIC_SIGNUP_ERROR };
   }
 
-  redirect("/lehrer/dashboard");
+  // Step 4: Clear any session cookies that signUp() may have set (happens when
+  // email confirmations are disabled on the Supabase instance).
+  await supabase.auth.signOut();
+
+  return { error: null, success: true };
 }

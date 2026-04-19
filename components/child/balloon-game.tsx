@@ -33,6 +33,7 @@ const COLORS = [
 
 type GameState = "idle" | "starting" | "playing" | "over";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BalloonGame({ currentPoints }: BalloonGameProps) {
   const [gameState, setGameState] = useState<GameState>("idle");
   const [balloons, setBalloons] = useState<BalloonData[]>([]);

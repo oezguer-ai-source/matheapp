@@ -15,7 +15,7 @@ export function RoleToggle({
     <div
       role="tablist"
       aria-label="Rolle wählen"
-      className="flex gap-2 p-1 bg-white rounded-2xl mb-8"
+      className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl mb-8"
     >
       <button
         type="button"
@@ -25,13 +25,13 @@ export function RoleToggle({
         aria-controls="login-panel-child"
         onClick={() => onChange("child")}
         className={cn(
-          "flex-1 h-14 rounded-xl text-lg font-semibold transition-colors",
+          "flex-1 h-14 rounded-xl text-lg font-bold transition-all duration-300",
           value === "child"
-            ? "bg-yellow-400 text-slate-900 ring-4 ring-yellow-300"
-            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            ? "bg-gradient-to-r from-orange-400 to-yellow-400 text-white shadow-lg shadow-orange-200/50 scale-[1.02]"
+            : "bg-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
         )}
       >
-        Kind
+        🎒 Kind
       </button>
       <button
         type="button"
@@ -41,10 +41,10 @@ export function RoleToggle({
         aria-controls="login-panel-teacher"
         onClick={() => onChange("teacher")}
         className={cn(
-          "flex-1 h-14 rounded-xl text-base font-semibold transition-colors",
+          "flex-1 h-14 rounded-xl text-base font-semibold transition-all duration-300",
           value === "teacher"
-            ? "bg-slate-900 text-white ring-2 ring-slate-400 ring-offset-2"
-            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200/50 scale-[1.02]"
+            : "bg-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
         )}
       >
         Lehrkraft

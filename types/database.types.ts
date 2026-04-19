@@ -14,6 +14,260 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          id: string
+          teacher_id: string
+          title: string
+          description: string
+          due_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          title: string
+          description?: string
+          due_date: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          title?: string
+          description?: string
+          due_date?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      assignment_items: {
+        Row: {
+          id: string
+          assignment_id: string
+          sort_order: number
+          item_type: string
+          question: string
+          options: Json | null
+          correct_options: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          sort_order?: number
+          item_type: string
+          question: string
+          options?: Json | null
+          correct_options?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          sort_order?: number
+          item_type?: string
+          question?: string
+          options?: Json | null
+          correct_options?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_items_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_classes: {
+        Row: {
+          assignment_id: string
+          class_id: string
+          assigned_at: string
+        }
+        Insert: {
+          assignment_id: string
+          class_id: string
+          assigned_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          class_id?: string
+          assigned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_classes_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_classes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_submissions: {
+        Row: {
+          id: string
+          assignment_id: string
+          student_id: string
+          status: string
+          started_at: string
+          submitted_at: string | null
+          duration_seconds: number | null
+          attempts_used: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          student_id: string
+          status?: string
+          started_at?: string
+          submitted_at?: string | null
+          duration_seconds?: number | null
+          attempts_used?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          student_id?: string
+          status?: string
+          started_at?: string
+          submitted_at?: string | null
+          duration_seconds?: number | null
+          attempts_used?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submission_answers: {
+        Row: {
+          id: string
+          submission_id: string
+          item_id: string
+          text_answer: string | null
+          selected_options: Json | null
+          is_correct: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          submission_id: string
+          item_id: string
+          text_answer?: string | null
+          selected_options?: Json | null
+          is_correct?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          submission_id?: string
+          item_id?: string
+          text_answer?: string | null
+          selected_options?: Json | null
+          is_correct?: boolean | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_answers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submission_answers_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          id: string
+          sender_id: string
+          recipient_id: string | null
+          class_id: string | null
+          subject: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          sender_id: string
+          recipient_id?: string | null
+          class_id?: string | null
+          subject?: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          sender_id?: string
+          recipient_id?: string | null
+          class_id?: string | null
+          subject?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reads: {
+        Row: {
+          message_id: string
+          user_id: string
+          read_at: string
+        }
+        Insert: {
+          message_id: string
+          user_id: string
+          read_at?: string
+        }
+        Update: {
+          message_id?: string
+          user_id?: string
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           created_at: string

@@ -2,39 +2,29 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { LogoutButtonChild } from "@/components/child/logout-button";
-import { DashboardStats, ProgressBar } from "@/components/child/dashboard-stats";
 import { MINIGAME_THRESHOLD } from "@/lib/config/rewards";
 
 export const metadata: Metadata = {
-  title: "Matheapp -- Startseite",
+  title: "Matheapp — Startseite",
 };
 
 export default async function KindDashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  // Fetch profile with grade_level
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, grade_level, role")
+    .select("display_name, grade_level, class_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Belt-and-braces role check (middleware already guards)
-  if (!profile || profile.role !== "child") {
-    redirect("/login");
-  }
+  if (!profile) redirect("/login");
 
-  // Fetch progress entries to compute totals (aggregate functions not available via PostgREST)
-  // T-30-01: RLS ensures child_id = auth.uid()
+  // Punkte & Aufgaben zählen
   const { data: entries } = await supabase
     .from("progress_entries")
     .select("points_earned")
@@ -43,40 +33,144 @@ export default async function KindDashboardPage() {
   const totalPoints = (entries ?? []).reduce((sum, e) => sum + (e.points_earned ?? 0), 0);
   const exerciseCount = (entries ?? []).length;
 
+  // Offene Aufgaben zählen
+  let pendingAssignments = 0;
+  if (profile.class_id) {
+    const { data: assignedIds } = await supabase
+      .from("assignment_classes")
+      .select("assignment_id")
+      .eq("class_id", profile.class_id);
+
+    if (assignedIds && assignedIds.length > 0) {
+      const ids = assignedIds.map((a) => a.assignment_id);
+
+      const { data: submissions } = await supabase
+        .from("assignment_submissions")
+        .select("assignment_id")
+        .eq("student_id", user.id)
+        .eq("status", "submitted")
+        .in("assignment_id", ids);
+
+      const submittedIds = new Set((submissions ?? []).map((s) => s.assignment_id));
+      pendingAssignments = ids.filter((id) => !submittedIds.has(id)).length;
+    }
+  }
+
+  // Ungelesene Nachrichten zählen
+  const { count: messageCount } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .or(`recipient_id.eq.${user.id},class_id.eq.${profile.class_id}`);
+
+  const displayName = profile.display_name
+    .split(".")
+    .map((p: string) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+
+  const progressPercent = Math.min((totalPoints / MINIGAME_THRESHOLD) * 100, 100);
+  const canPlay = totalPoints >= MINIGAME_THRESHOLD;
+
   return (
-    <main className="min-h-dvh bg-white p-6 flex flex-col gap-6">
-      <DashboardStats
-        totalPoints={totalPoints}
-        exerciseCount={exerciseCount}
-        gradeLevel={profile.grade_level ?? 1}
-        displayName={profile.display_name ?? "Kind"}
-      />
-
-      <ProgressBar currentPoints={totalPoints} />
-
-      <Link
-        href="/kind/ueben"
-        className="h-16 flex items-center justify-center rounded-2xl bg-child-green text-white text-3xl font-semibold hover:opacity-90 focus:ring-4 focus:ring-child-green/50 focus:ring-offset-2 focus:outline-none"
-      >
-        Aufgaben starten
-      </Link>
-
-      {totalPoints >= MINIGAME_THRESHOLD ? (
-        <Link
-          href="/kind/spiel"
-          className="h-16 flex items-center justify-center rounded-2xl bg-child-yellow text-slate-900 text-3xl font-semibold hover:opacity-90 focus:ring-4 focus:ring-child-yellow/50 focus:ring-offset-2 focus:outline-none"
-        >
-          Spiel starten
-        </Link>
-      ) : (
-        <div className="h-16 flex items-center justify-center rounded-2xl bg-slate-200 text-slate-400 text-3xl font-semibold cursor-not-allowed">
-          Spiel starten
-        </div>
-      )}
-
-      <div className="mt-auto">
-        <LogoutButtonChild />
+    <div className="p-6 max-w-2xl mx-auto">
+      {/* Begrüßung */}
+      <div className="text-center mb-8 animate-fade-in">
+        <p className="text-4xl mb-2 animate-wiggle">👋</p>
+        <h1 className="text-3xl font-extrabold text-slate-800">
+          Hallo, {displayName}!
+        </h1>
+        <p className="text-lg text-slate-500 mt-1">Was möchtest du heute machen?</p>
       </div>
-    </main>
+
+      {/* Punkte-Karte */}
+      <div className="glass-card rounded-3xl p-6 mb-6 shadow-lg shadow-orange-100/30 animate-fade-in animation-delay-1">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Deine Punkte</p>
+            <p className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+              {totalPoints}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-slate-500 font-medium">Aufgaben gelöst</p>
+            <p className="text-4xl font-extrabold text-slate-700">{exerciseCount}</p>
+          </div>
+        </div>
+
+        {/* Progress Bar zum Spiel */}
+        <div className="mt-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <span>Fortschritt zum Spiel</span>
+            <span>{totalPoints} / {MINIGAME_THRESHOLD}</span>
+          </div>
+          <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-orange-400 via-yellow-400 to-green-400 transition-all duration-700"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Cards */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* Üben */}
+        <Link
+          href="/kind/ueben"
+          className="glass-card rounded-2xl p-5 text-center hover:scale-[1.03] active:scale-[0.98] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-2"
+        >
+          <span className="text-4xl block mb-2">✏️</span>
+          <span className="text-base font-bold text-slate-800">Üben</span>
+          <p className="text-xs text-slate-500 mt-1">Mathe-Aufgaben lösen</p>
+        </Link>
+
+        {/* Aufgaben vom Lehrer */}
+        <Link
+          href="/kind/aufgaben"
+          className="glass-card rounded-2xl p-5 text-center hover:scale-[1.03] active:scale-[0.98] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-3 relative"
+        >
+          <span className="text-4xl block mb-2">📋</span>
+          <span className="text-base font-bold text-slate-800">Aufgaben</span>
+          <p className="text-xs text-slate-500 mt-1">Vom Lehrer</p>
+          {pendingAssignments > 0 && (
+            <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg">
+              {pendingAssignments}
+            </span>
+          )}
+        </Link>
+
+        {/* Nachrichten */}
+        <Link
+          href="/kind/nachrichten"
+          className="glass-card rounded-2xl p-5 text-center hover:scale-[1.03] active:scale-[0.98] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-3 relative"
+        >
+          <span className="text-4xl block mb-2">💌</span>
+          <span className="text-base font-bold text-slate-800">Post</span>
+          <p className="text-xs text-slate-500 mt-1">Nachrichten</p>
+          {(messageCount ?? 0) > 0 && (
+            <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center shadow-lg">
+              {messageCount}
+            </span>
+          )}
+        </Link>
+
+        {/* Spiel */}
+        {canPlay ? (
+          <Link
+            href="/kind/spiel"
+            className="glass-card rounded-2xl p-5 text-center hover:scale-[1.03] active:scale-[0.98] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-4"
+          >
+            <span className="text-4xl block mb-2 animate-float">🎈</span>
+            <span className="text-base font-bold text-slate-800">Spiel</span>
+            <p className="text-xs text-green-600 mt-1 font-medium">Freigeschaltet!</p>
+          </Link>
+        ) : (
+          <div className="glass-card rounded-2xl p-5 text-center opacity-50 cursor-not-allowed animate-fade-in animation-delay-4">
+            <span className="text-4xl block mb-2 grayscale">🎈</span>
+            <span className="text-base font-bold text-slate-400">Spiel</span>
+            <p className="text-xs text-slate-400 mt-1">Noch {MINIGAME_THRESHOLD - totalPoints} Punkte</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

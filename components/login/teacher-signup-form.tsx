@@ -13,10 +13,29 @@ const initialState: SignupActionState = { error: null };
 export function TeacherSignupForm() {
   const [state, action, pending] = useActionState(teacherSignup, initialState);
 
+  if (state.success) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <div className="rounded-2xl bg-green-50 border border-green-200 p-6">
+          <h2 className="text-lg font-semibold text-green-900 mb-2">
+            Registrierung erfolgreich!
+          </h2>
+          <p className="text-sm text-green-800">
+            Wir haben Ihnen eine Bestaetigungs-E-Mail gesendet. Bitte klicken
+            Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.
+          </p>
+        </div>
+        <Link href="/login" className="text-sm text-slate-600 underline">
+          Zum Login
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <form action={action} className="flex flex-col gap-4">
       <p className="text-base text-slate-700 text-center">
-        Legen Sie ein Konto an, um Ihre Klasse zu verwalten.
+        Erstellen Sie Ihr Lehrkraft-Konto.
       </p>
 
       <div className="grid gap-2">
@@ -52,35 +71,6 @@ export function TeacherSignupForm() {
           autoComplete="new-password"
           required
           minLength={8}
-        />
-      </div>
-
-      {/* D-13a: atomic school + first-class creation fields */}
-      <div className="grid gap-2">
-        <Label htmlFor="signup-school">Name der Schule</Label>
-        <Input
-          id="signup-school"
-          type="text"
-          name="schoolName"
-          autoComplete="organization"
-          placeholder="z. B. Grundschule Musterweg"
-          required
-          minLength={2}
-          maxLength={100}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="signup-class">Name Ihrer Klasse</Label>
-        <Input
-          id="signup-class"
-          type="text"
-          name="className"
-          autoComplete="off"
-          placeholder="z. B. 3a"
-          required
-          minLength={2}
-          maxLength={100}
         />
       </div>
 

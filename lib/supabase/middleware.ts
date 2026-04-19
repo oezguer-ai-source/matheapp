@@ -35,7 +35,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicPath =
     pathname === "/" ||
     pathname.startsWith("/login") ||
-    pathname.startsWith("/registrieren");
+    pathname.startsWith("/registrieren") ||
+    pathname.startsWith("/auth");
 
   if (!claims && !isPublicPath) {
     const url = request.nextUrl.clone();
@@ -47,11 +48,19 @@ export async function updateSession(request: NextRequest) {
     const role = (claims as { app_metadata?: { role?: string } })
       .app_metadata?.role;
 
-    // Redirect authenticated users away from public pages (login, registration, landing).
+    // Redirect authenticated users away from public pages — but ONLY if they
+    // have a recognized role. Without this guard, users whose JWT lacks a role
+    // (e.g. just registered, role not yet in the token) would loop:
+    //   /login → /lehrer/dashboard → /login → …
     if (isPublicPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = role === "child" ? "/kind/dashboard" : "/lehrer/dashboard";
-      return NextResponse.redirect(url);
+      if (role === "child" || role === "teacher") {
+        const url = request.nextUrl.clone();
+        url.pathname = role === "child" ? "/kind/dashboard" : "/lehrer/dashboard";
+        return NextResponse.redirect(url);
+      }
+      // No valid role — let them stay on the public page so they can sign out
+      // or re-register without triggering a redirect loop.
+      return supabaseResponse;
     }
 
     if (role === "child" && pathname.startsWith("/lehrer")) {
@@ -66,7 +75,8 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Deny access for users with no recognized role (e.g., created via direct
-    // Supabase auth call without app_metadata). Redirect to login.
+    // Supabase auth call without app_metadata). Redirect to login — safe now
+    // because the public-path guard above prevents looping back here.
     if (role !== "child" && role !== "teacher") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";

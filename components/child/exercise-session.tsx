@@ -5,21 +5,23 @@ import { useRouter } from "next/navigation";
 import { generateExerciseAction, submitAnswerAction } from "@/app/(child)/kind/ueben/actions";
 import { NumberPad } from "@/components/child/number-pad";
 import { FeedbackOverlay } from "@/components/child/feedback-overlay";
-import type { ClientExercise, Difficulty, SubmitAnswerResult } from "@/lib/exercises/types";
+import { getHint, generateSolutionSteps } from "@/lib/exercises/solution-steps";
+import type { ClientExercise, Difficulty, Operator, SubmitAnswerResult } from "@/lib/exercises/types";
 
 type SessionState = "loading" | "answering" | "submitting" | "feedback" | "error";
 
-const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  easy: "Leicht",
-  medium: "Mittel",
-  hard: "Schwer",
+const DIFFICULTY_LABELS: Record<Difficulty, { label: string; color: string }> = {
+  easy: { label: "Leicht", color: "bg-green-100 text-green-700" },
+  medium: { label: "Mittel", color: "bg-amber-100 text-amber-700" },
+  hard: { label: "Schwer", color: "bg-red-100 text-red-700" },
 };
 
 interface ExerciseSessionProps {
   grade: number;
+  operatorFilter?: Operator[];
 }
 
-export function ExerciseSession({ grade }: ExerciseSessionProps) {
+export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps) {
   const router = useRouter();
 
   const [state, setState] = useState<SessionState>("loading");
@@ -31,12 +33,16 @@ export function ExerciseSession({ grade }: ExerciseSessionProps) {
   const [feedback, setFeedback] = useState<SubmitAnswerResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadNextExercise = useCallback(async () => {
     setState("loading");
-    const result = await generateExerciseAction(grade, difficulty);
+    setShowHint(false);
+    setShowSolution(false);
+    const result = await generateExerciseAction(grade, difficulty, operatorFilter);
     if (result.data) {
       setExercise(result.data);
       setAnswer("");
@@ -44,24 +50,19 @@ export function ExerciseSession({ grade }: ExerciseSessionProps) {
     } else {
       setState("error");
     }
-  }, [grade, difficulty]);
+  }, [grade, difficulty, operatorFilter]);
 
   useEffect(() => {
     loadNextExercise();
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleDigit(digit: string) {
     if (state !== "answering") return;
-    setAnswer((prev) => {
-      if (prev.length >= 5) return prev;
-      return prev + digit;
-    });
+    setAnswer((prev) => (prev.length >= 5 ? prev : prev + digit));
   }
 
   function handleDelete() {
@@ -98,72 +99,113 @@ export function ExerciseSession({ grade }: ExerciseSessionProps) {
       }
 
       setState("feedback");
-
-      timeoutRef.current = setTimeout(
-        () => loadNextExercise(),
-        result.data.correct ? 1500 : 2000
-      );
+      setShowSolution(false);
+      // Kein Auto-Weiter — Schüler klickt selbst "Nächste Aufgabe"
     } else {
       setState("error");
     }
   }
 
+  function handleNextExercise() {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    loadNextExercise();
+  }
+
   function handleEndSession() {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     router.push("/kind/dashboard");
     router.refresh();
   }
 
-  // Background color based on feedback state
-  let bgClass = "bg-white";
+  // Rechenweg-Schritte generieren
+  const solutionSteps =
+    state === "feedback" && feedback && exercise
+      ? generateSolutionSteps(
+          exercise.operand1,
+          exercise.operand2,
+          exercise.operator,
+          feedback.correctAnswer
+        )
+      : [];
+
+  // Hilfestellung
+  const hintText =
+    exercise ? getHint(exercise.operator, exercise.operand1, exercise.operand2) : "";
+
+  // Hintergrundfarbe je nach Feedback
+  let bgClass = "bg-transparent";
   if (state === "feedback" && feedback) {
-    bgClass = feedback.correct ? "bg-green-50" : "bg-red-50";
+    bgClass = feedback.correct ? "bg-green-50/50" : "bg-red-50/50";
   }
 
+  const diffInfo = DIFFICULTY_LABELS[difficulty];
+
   return (
-    <div className={`min-h-dvh transition-colors duration-300 ${bgClass}`}>
-      {/* Header bar */}
+    <div className={`min-h-[calc(100dvh-56px)] transition-colors duration-300 ${bgClass}`}>
+      {/* Header */}
       <div className="flex items-center justify-between p-4">
         <button
           type="button"
           onClick={handleEndSession}
-          className="bg-red-500 text-white rounded-2xl px-6 h-12 text-xl font-semibold active:scale-95 transition-transform"
+          className="bg-white/80 backdrop-blur text-slate-600 rounded-2xl px-5 h-10 text-sm font-semibold border border-slate-200 hover:bg-white active:scale-95 transition-all"
         >
-          Beenden
+          ← Zurück
         </button>
 
-        <div className="flex items-center gap-4 text-lg font-medium">
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
-            {correctCount} richtig
+        <div className="flex items-center gap-3 text-sm font-semibold">
+          <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full">
+            ✓ {correctCount}
           </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
-            {wrongCount} falsch
+          <span className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1.5 rounded-full">
+            ✗ {wrongCount}
           </span>
-          <span className="text-blue-600 font-semibold">
-            {DIFFICULTY_LABELS[difficulty]}
+          <span className={`px-3 py-1.5 rounded-full ${diffInfo.color}`}>
+            {diffInfo.label}
           </span>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex flex-col items-center justify-center px-4 pt-8 pb-16">
-        {/* Loading state */}
+      {/* Hauptbereich */}
+      <div className="flex flex-col items-center justify-center px-4 pt-4 pb-8">
+        {/* Laden */}
         {state === "loading" && (
-          <p className="text-2xl text-gray-500">Aufgabe wird geladen...</p>
+          <div className="text-center animate-fade-in">
+            <p className="text-5xl mb-4 animate-float">🔄</p>
+            <p className="text-xl text-slate-500">Aufgabe wird geladen…</p>
+          </div>
         )}
 
-        {/* Exercise display + number pad (answering or submitting) */}
+        {/* Aufgabe beantworten */}
         {(state === "answering" || state === "submitting") && exercise && (
-          <>
-            <div className="text-5xl font-bold text-center mb-12">
-              {exercise.operand1} {exercise.operator} {exercise.operand2} ={" "}
-              <span className={answer ? "text-blue-600" : "text-gray-400"}>
-                {answer || "?"}
-              </span>
+          <div className="w-full max-w-md animate-fade-in">
+            {/* Aufgabe mit Hilfe-Button */}
+            <div className="glass-card rounded-3xl p-8 mb-6 shadow-lg relative">
+              {/* Fragezeichen-Hilfe */}
+              <button
+                type="button"
+                onClick={() => setShowHint(!showHint)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-bold flex items-center justify-center hover:bg-blue-200 transition-colors"
+                aria-label="Hilfestellung anzeigen"
+              >
+                ?
+              </button>
+
+              <div className="text-5xl font-bold text-center text-slate-800 mb-2">
+                {exercise.operand1} {exercise.operator} {exercise.operand2} ={" "}
+                <span className={answer ? "text-orange-500" : "text-slate-300"}>
+                  {answer || "?"}
+                </span>
+              </div>
+
+              {/* Hilfestellung */}
+              {showHint && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 animate-fade-in">
+                  <p className="text-sm text-blue-800 flex items-start gap-2">
+                    <span className="text-lg leading-none">💡</span>
+                    {hintText}
+                  </p>
+                </div>
+              )}
             </div>
 
             <NumberPad
@@ -172,39 +214,75 @@ export function ExerciseSession({ grade }: ExerciseSessionProps) {
               onConfirm={handleConfirm}
               disabled={state === "submitting"}
             />
-          </>
+          </div>
         )}
 
-        {/* Feedback state */}
-        {state === "feedback" && feedback && (
-          <>
-            <div className="mb-8">
-              <FeedbackOverlay
-                correct={feedback.correct}
-                pointsEarned={feedback.pointsEarned}
-                correctAnswer={feedback.correctAnswer}
-              />
+        {/* Feedback mit Rechenweg */}
+        {state === "feedback" && feedback && exercise && (
+          <div className="w-full max-w-md animate-fade-in">
+            {/* Ergebnis */}
+            <FeedbackOverlay
+              correct={feedback.correct}
+              pointsEarned={feedback.pointsEarned}
+              correctAnswer={feedback.correctAnswer}
+            />
+
+            {/* Rechenweg */}
+            <div className="glass-card rounded-2xl p-6 mt-4 shadow-md">
+              <button
+                type="button"
+                onClick={() => setShowSolution(!showSolution)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  📝 Rechenweg anzeigen
+                </span>
+                <span className="text-slate-400 text-lg">
+                  {showSolution ? "▲" : "▼"}
+                </span>
+              </button>
+
+              {showSolution && (
+                <div className="mt-4 space-y-2 animate-fade-in">
+                  {solutionSteps.map((step, idx) => (
+                    <div
+                      key={idx}
+                      className={`px-4 py-2.5 rounded-xl text-sm ${
+                        step.highlight
+                          ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 font-bold text-green-800"
+                          : "bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span className="text-slate-400 mr-2 text-xs">Schritt {idx + 1}</span>
+                      {step.text}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <NumberPad
-              onDigit={handleDigit}
-              onDelete={handleDelete}
-              onConfirm={handleConfirm}
-              disabled={true}
-            />
-          </>
+            {/* Nächste Aufgabe Button */}
+            <button
+              type="button"
+              onClick={handleNextExercise}
+              className="w-full mt-4 h-14 rounded-2xl bg-gradient-to-r from-orange-400 to-yellow-400 text-white text-lg font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] transition-all"
+            >
+              Nächste Aufgabe →
+            </button>
+          </div>
         )}
 
-        {/* Error state */}
+        {/* Fehler */}
         {state === "error" && (
-          <div className="text-center">
-            <p className="text-2xl text-red-600 mb-6">
+          <div className="text-center animate-fade-in">
+            <p className="text-5xl mb-4">😕</p>
+            <p className="text-xl text-red-600 mb-6">
               Ein Fehler ist aufgetreten.
             </p>
             <button
               type="button"
               onClick={() => loadNextExercise()}
-              className="bg-blue-500 text-white rounded-2xl px-8 h-14 text-xl font-semibold active:scale-95 transition-transform"
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl px-8 h-14 text-lg font-bold shadow-lg active:scale-95 transition-all"
             >
               Erneut versuchen
             </button>

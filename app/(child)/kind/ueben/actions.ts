@@ -75,7 +75,8 @@ function validateOperandsForGrade(
 
 export async function generateExerciseAction(
   grade: number,
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  operatorFilter?: Operator[]
 ): Promise<{ data?: ClientExercise; error?: string }> {
   const parsed = generateExerciseSchema.safeParse({ grade, difficulty });
   if (!parsed.success) {
@@ -90,10 +91,21 @@ export async function generateExerciseAction(
     return { error: "Nicht angemeldet." };
   }
 
-  const exercise = generateExercise(
+  // Generiere Aufgaben bis der Operator zum Filter passt (max 20 Versuche)
+  let exercise = generateExercise(
     parsed.data.grade,
     parsed.data.difficulty as Difficulty
   );
+
+  if (operatorFilter && operatorFilter.length > 0 && operatorFilter.length < 4) {
+    for (let i = 0; i < 20; i++) {
+      if (operatorFilter.includes(exercise.operator)) break;
+      exercise = generateExercise(
+        parsed.data.grade,
+        parsed.data.difficulty as Difficulty
+      );
+    }
+  }
 
   // Return WITHOUT correctAnswer (D-04, Pitfall 3)
   return {

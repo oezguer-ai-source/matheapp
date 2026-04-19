@@ -1,8 +1,29 @@
 @import "tailwindcss";
 
+/* ============================================
+   Design Tokens
+   ============================================ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Kinder-Palette */
+  --child-primary: #FF6B35;
+  --child-secondary: #FFD23F;
+  --child-accent: #06D6A0;
+  --child-blue: #118AB2;
+  --child-pink: #EF476F;
+  --child-purple: #7B2FF7;
+  --child-bg-start: #FFF8F0;
+  --child-bg-end: #FFF0E5;
+
+  /* Lehrer-Palette */
+  --teacher-primary: #4F46E5;
+  --teacher-primary-light: #818CF8;
+  --teacher-accent: #06B6D4;
+  --teacher-bg: #F8FAFC;
+  --teacher-sidebar-start: #0F172A;
+  --teacher-sidebar-end: #1E293B;
 }
 
 @theme inline {
@@ -10,52 +31,164 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-child-yellow: #FFC107;
-  --color-child-green: #4CAF50;
-  --color-child-red: #F44336;
-  --color-child-blue: #2196F3;
+  --color-child-yellow: #FFD23F;
+  --color-child-green: #06D6A0;
+  --color-child-red: #EF476F;
+  --color-child-blue: #118AB2;
+  --color-child-orange: #FF6B35;
+  --color-child-purple: #7B2FF7;
   --animate-balloon-rise: balloon-rise var(--balloon-speed, 6s) linear forwards;
   --animate-balloon-pop: balloon-pop 0.3s ease-out forwards;
 }
 
+/* ============================================
+   Animations
+   ============================================ */
 @keyframes balloon-rise {
-  0% {
-    transform: translateY(100vh) scale(1);
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-20vh) scale(1);
-    opacity: 0;
-  }
+  0% { transform: translateY(100vh) scale(1); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(-20vh) scale(1); opacity: 0; }
 }
 
 @keyframes balloon-pop {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(0);
-    opacity: 0;
-  }
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes blob-move {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+/* Utility animation classes */
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-wiggle { animation: wiggle 2s ease-in-out infinite; }
+.animate-gradient { animation: gradient-shift 6s ease infinite; background-size: 200% 200%; }
+.animate-fade-in { animation: fade-in-up 0.5s ease-out both; }
+.animate-blob { animation: blob-move 8s ease-in-out infinite; }
+.animation-delay-1 { animation-delay: 0.1s; }
+.animation-delay-2 { animation-delay: 0.2s; }
+.animation-delay-3 { animation-delay: 0.3s; }
+.animation-delay-4 { animation-delay: 0.4s; }
+
+/* ============================================
+   Kinder-Hintergrund
+   ============================================ */
+.child-bg {
+  background: linear-gradient(135deg, var(--child-bg-start), var(--child-bg-end));
+  position: relative;
+  overflow: hidden;
+}
+
+.child-bg::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 210, 63, 0.15) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  border-radius: 50%;
+  animation: blob-move 10s ease-in-out infinite;
+}
+
+.child-bg::after {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(6, 214, 160, 0.12) 0%, transparent 70%);
+  bottom: -80px;
+  left: -80px;
+  border-radius: 50%;
+  animation: blob-move 12s ease-in-out infinite reverse;
+}
+
+/* ============================================
+   Lehrer-Sidebar Gradient
+   ============================================ */
+.teacher-sidebar {
+  background: linear-gradient(180deg, var(--teacher-sidebar-start) 0%, var(--teacher-sidebar-end) 100%);
+}
+
+/* ============================================
+   Glassmorphism Card
+   ============================================ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================
+   Gradient Stat Card
+   ============================================ */
+.stat-card-indigo {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  color: white;
+}
+
+.stat-card-cyan {
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+  color: white;
+}
+
+.stat-card-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+}
+
+.stat-card-amber {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: white;
+}
+
+/* ============================================
+   Base
+   ============================================ */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+/* Better focus ring */
+*:focus-visible {
+  outline: 2px solid var(--teacher-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth transitions globally */
+button, a, input, select, textarea {
+  transition: all 0.2s ease;
 }
