@@ -17,16 +17,24 @@ export default async function AufgabenPage() {
     .eq("teacher_id", user!.id)
     .order("created_at", { ascending: false });
 
-  // Klassen-Zuweisungen laden
+  // Klassen-Zuweisungen + Abgabe-Statistiken parallel.
   const assignmentIds = (assignments ?? []).map((a) => a.id);
   const classMap = new Map<string, string[]>();
+  const submissionStats = new Map<string, { total: number; submitted: number }>();
 
   if (assignmentIds.length > 0) {
-    const { data: acRows } = await admin
-      .from("assignment_classes")
-      .select("assignment_id, class_id")
-      .in("assignment_id", assignmentIds);
+    const [acRes, subsRes] = await Promise.all([
+      admin
+        .from("assignment_classes")
+        .select("assignment_id, class_id")
+        .in("assignment_id", assignmentIds),
+      admin
+        .from("assignment_submissions")
+        .select("assignment_id, status")
+        .in("assignment_id", assignmentIds),
+    ]);
 
+    const acRows = acRes.data;
     const classIds = [...new Set((acRows ?? []).map((r) => r.class_id))];
     const classNameMap = new Map<string, string>();
 
@@ -48,17 +56,8 @@ export default async function AufgabenPage() {
         classMap.set(row.assignment_id, existing);
       }
     }
-  }
 
-  // Abgabe-Statistiken laden
-  const submissionStats = new Map<string, { total: number; submitted: number }>();
-  if (assignmentIds.length > 0) {
-    const { data: subs } = await admin
-      .from("assignment_submissions")
-      .select("assignment_id, status")
-      .in("assignment_id", assignmentIds);
-
-    for (const s of subs ?? []) {
+    for (const s of subsRes.data ?? []) {
       const existing = submissionStats.get(s.assignment_id) ?? { total: 0, submitted: 0 };
       existing.total += 1;
       if (s.status === "submitted") existing.submitted += 1;

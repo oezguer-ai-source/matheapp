@@ -19,13 +19,22 @@ export default async function LehrerLayout({
     redirect("/login");
   }
 
-  // Lehrer-Profil via Admin-Client (RLS-agnostisch) laden.
+  // Profil + Klassen parallel laden — spart einen Roundtrip beim Rendern.
   const admin = createAdminClient();
-  let { data: profile } = await admin
-    .from("profiles")
-    .select("display_name, role")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [profileRes, classesRes] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("display_name, role")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    admin
+      .from("classes")
+      .select("id, name")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: true }),
+  ]);
+  let { data: profile } = profileRes;
+  const classes = classesRes.data;
 
   // Self-Healing: Wenn der Auth-Account als Lehrer markiert ist, aber das
   // Profil (noch) fehlt — z. B. weil der Trigger aus 20260415000003 beim
@@ -86,13 +95,6 @@ export default async function LehrerLayout({
       </main>
     );
   }
-
-  // Klassen des Lehrers laden
-  const { data: classes } = await admin
-    .from("classes")
-    .select("id, name")
-    .eq("teacher_id", user.id)
-    .order("created_at", { ascending: true });
 
   return (
     <div className="flex min-h-dvh">

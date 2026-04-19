@@ -11,26 +11,30 @@ export default async function LehrerDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Profil laden
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("user_id", user!.id)
-    .maybeSingle();
+  // Profil, Klassen-Count + Klassen-IDs, Aufgaben-Count parallel.
+  const [profileRes, classCountRes, teacherClassesRes, assignmentCountRes] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user!.id)
+        .maybeSingle(),
+      supabase
+        .from("classes")
+        .select("id", { count: "exact", head: true })
+        .eq("teacher_id", user!.id),
+      supabase.from("classes").select("id").eq("teacher_id", user!.id),
+      supabase
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("teacher_id", user!.id),
+    ]);
 
-  // Klassen zählen
-  const { count: classCount } = await supabase
-    .from("classes")
-    .select("id", { count: "exact", head: true })
-    .eq("teacher_id", user!.id);
+  const profile = profileRes.data;
+  const classCount = classCountRes.count;
+  const assignmentCount = assignmentCountRes.count;
+  const classIds = teacherClassesRes.data?.map((c) => c.id) ?? [];
 
-  // Schüler zählen (über alle Klassen)
-  const { data: teacherClasses } = await supabase
-    .from("classes")
-    .select("id")
-    .eq("teacher_id", user!.id);
-
-  const classIds = teacherClasses?.map((c) => c.id) ?? [];
   let studentCount = 0;
   if (classIds.length > 0) {
     const { count } = await supabase
@@ -40,12 +44,6 @@ export default async function LehrerDashboardPage() {
       .in("class_id", classIds);
     studentCount = count ?? 0;
   }
-
-  // Aufgaben zählen
-  const { count: assignmentCount } = await supabase
-    .from("assignments")
-    .select("id", { count: "exact", head: true })
-    .eq("teacher_id", user!.id);
 
   const firstName = profile?.display_name?.split(" ")[0] ?? "Lehrkraft";
 

@@ -188,7 +188,21 @@ body {
   border-radius: 4px;
 }
 
-/* Smooth transitions globally */
+/* Smooth transitions — nur gezielte Eigenschaften, nicht `all`, sonst
+   wird jede Style-Änderung (Layout, Farbe, Schatten) animiert und
+   verursacht spürbares Ruckeln. */
 button, a, input, select, textarea {
-  transition: all 0.2s ease;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Animationen respektieren Systemeinstellung — verhindert Dauer-GPU-Last
+   bei Nutzern mit reduced-motion-Präferenz. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
