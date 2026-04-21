@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { GAMES } from "@/lib/config/games";
+import { fetchChildConversationAction } from "@/app/(child)/kind/nachrichten/actions";
+import { ChildChat } from "@/components/child/child-chat";
 
 export const metadata: Metadata = {
   title: "Matheapp — Startseite",
@@ -73,6 +75,9 @@ export default async function KindDashboardPage() {
   const nextThreshold = nextGame?.unlockAt ?? GAMES[GAMES.length - 1].unlockAt;
   const progressPercent = Math.min((totalPoints / nextThreshold) * 100, 100);
   const canPlay = totalPoints >= firstGame.unlockAt;
+
+  // Chat-Daten für Floating-Bubble
+  const chatData = await fetchChildConversationAction();
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -185,6 +190,15 @@ export default async function KindDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Floating Chat-Bubble */}
+      <ChildChat
+        initialMessages={chatData.messages ?? []}
+        teacherId={chatData.teacherId ?? null}
+        teacherName={chatData.teacherName ?? null}
+        mode="floating"
+        startOpen={false}
+      />
     </div>
   );
 }

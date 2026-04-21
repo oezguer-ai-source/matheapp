@@ -6,7 +6,16 @@ import { generateExerciseAction, submitAnswerAction } from "@/app/(child)/kind/u
 import { NumberPad } from "@/components/child/number-pad";
 import { FeedbackOverlay } from "@/components/child/feedback-overlay";
 import { getHint, generateSolutionSteps } from "@/lib/exercises/solution-steps";
+import {
+  exerciseToSpeech,
+  playCorrect,
+  playWrong,
+  speak,
+  stopSpeaking,
+} from "@/lib/audio/feedback";
+import { AudioToggle } from "@/components/child/audio-toggle";
 import type { ClientExercise, Difficulty, Operator, SubmitAnswerResult } from "@/lib/exercises/types";
+import type { ExerciseFocus } from "@/lib/exercises/focus";
 
 type SessionState = "loading" | "answering" | "submitting" | "feedback" | "error";
 
@@ -19,9 +28,10 @@ const DIFFICULTY_LABELS: Record<Difficulty, { label: string; color: string }> = 
 interface ExerciseSessionProps {
   grade: number;
   operatorFilter?: Operator[];
+  focus?: ExerciseFocus;
 }
 
-export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps) {
+export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessionProps) {
   const router = useRouter();
 
   const [state, setState] = useState<SessionState>("loading");
@@ -42,15 +52,23 @@ export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps)
     setState("loading");
     setShowHint(false);
     setShowSolution(false);
-    const result = await generateExerciseAction(grade, difficulty, operatorFilter);
+    stopSpeaking();
+    const result = await generateExerciseAction(grade, difficulty, operatorFilter, focus);
     if (result.data) {
       setExercise(result.data);
       setAnswer("");
       setState("answering");
+      speak(
+        exerciseToSpeech(
+          result.data.operand1,
+          result.data.operand2,
+          result.data.operator
+        )
+      );
     } else {
       setState("error");
     }
-  }, [grade, difficulty, operatorFilter]);
+  }, [grade, difficulty, operatorFilter, focus]);
 
   useEffect(() => {
     loadNextExercise();
@@ -84,6 +102,7 @@ export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps)
       currentDifficulty: difficulty,
       correctStreak,
       incorrectStreak,
+      focus,
     });
 
     if (result.data) {
@@ -94,8 +113,12 @@ export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps)
 
       if (result.data.correct) {
         setCorrectCount((c) => c + 1);
+        playCorrect();
+        speak("Super!");
       } else {
         setWrongCount((c) => c + 1);
+        playWrong();
+        speak(`Die richtige Antwort ist ${result.data.correctAnswer}.`);
       }
 
       setState("feedback");
@@ -152,14 +175,15 @@ export function ExerciseSession({ grade, operatorFilter }: ExerciseSessionProps)
           ← Zurück
         </button>
 
-        <div className="flex items-center gap-3 text-sm font-semibold">
+        <div className="flex items-center gap-2 sm:gap-3 text-sm font-semibold">
+          <AudioToggle />
           <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full">
             ✓ {correctCount}
           </span>
           <span className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1.5 rounded-full">
             ✗ {wrongCount}
           </span>
-          <span className={`px-3 py-1.5 rounded-full ${diffInfo.color}`}>
+          <span className={`px-3 py-1.5 rounded-full ${diffInfo.color} hidden sm:inline-flex`}>
             {diffInfo.label}
           </span>
         </div>

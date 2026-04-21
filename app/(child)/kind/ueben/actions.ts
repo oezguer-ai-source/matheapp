@@ -7,6 +7,11 @@ import { computeNewDifficulty } from "@/lib/exercises/difficulty";
 import { calculatePoints } from "@/lib/exercises/points";
 import { OPERATOR_TO_TYPE } from "@/lib/exercises/types";
 import { RANGES } from "@/lib/exercises/config";
+import {
+  generateFocusedExercise,
+  validateOperandsForFocus,
+  type ExerciseFocus,
+} from "@/lib/exercises/focus";
 import type {
   ClientExercise,
   Difficulty,
@@ -17,6 +22,7 @@ import type {
 import {
   generateExerciseSchema,
   submitAnswerSchema,
+  focusSchema,
 } from "@/lib/schemas/exercise";
 
 /**
@@ -76,7 +82,8 @@ function validateOperandsForGrade(
 export async function generateExerciseAction(
   grade: number,
   difficulty: Difficulty,
-  operatorFilter?: Operator[]
+  operatorFilter?: Operator[],
+  focus?: ExerciseFocus
 ): Promise<{ data?: ClientExercise; error?: string }> {
   const parsed = generateExerciseSchema.safeParse({ grade, difficulty });
   if (!parsed.success) {
@@ -89,6 +96,23 @@ export async function generateExerciseAction(
   } = await supabase.auth.getUser();
   if (!user) {
     return { error: "Nicht angemeldet." };
+  }
+
+  // Focus-Modus: gezielte Aufgabe (Einmaleins mit 7, Plus bis 20, etc.)
+  if (focus) {
+    const focusParsed = focusSchema.safeParse(focus);
+    if (!focusParsed.success) {
+      return { error: "Ungueltiger Fokus." };
+    }
+    const exercise = generateFocusedExercise(focusParsed.data);
+    return {
+      data: {
+        id: exercise.id,
+        operand1: exercise.operand1,
+        operand2: exercise.operand2,
+        operator: exercise.operator,
+      },
+    };
   }
 
   // Generiere Aufgaben bis der Operator zum Filter passt (max 20 Versuche)
@@ -127,6 +151,7 @@ export async function submitAnswerAction(input: {
   currentDifficulty: "easy" | "medium" | "hard";
   correctStreak: number;
   incorrectStreak: number;
+  focus?: ExerciseFocus;
 }): Promise<{ data?: SubmitAnswerResult; error?: string }> {
   const parsed = submitAnswerSchema.safeParse(input);
   if (!parsed.success) {
@@ -160,11 +185,16 @@ export async function submitAnswerAction(input: {
     currentDifficulty,
     correctStreak,
     incorrectStreak,
+    focus,
   } = parsed.data;
 
-  // Validate operands against child's grade/difficulty to prevent trivial-exercise forgery (CR-01)
+  // Validation: Focus-Modus hat eigene Regeln, sonst Range-Check gegen Klassenstufe (CR-01)
   const grade = profile.grade_level as Grade;
-  if (
+  if (focus) {
+    if (!validateOperandsForFocus(operand1, operand2, operator as Operator, focus)) {
+      return { error: "Ungueltige Aufgabe fuer diesen Fokus." };
+    }
+  } else if (
     !validateOperandsForGrade(
       operand1,
       operand2,
