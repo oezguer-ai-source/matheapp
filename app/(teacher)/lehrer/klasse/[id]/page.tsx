@@ -64,6 +64,18 @@ export default async function KlasseDetailPage({
     }
   }
 
+  // Streak-State pro Schüler laden
+  const streakMap = new Map<string, number>();
+  if (studentIds.length > 0) {
+    const { data: streaks } = await admin
+      .from("streak_state")
+      .select("child_id, current_streak")
+      .in("child_id", studentIds);
+    for (const s of streaks ?? []) {
+      streakMap.set(s.child_id, s.current_streak);
+    }
+  }
+
   // Klassen-Statistiken
   const totalStudents = students?.length ?? 0;
   let totalPoints = 0;
@@ -159,6 +171,7 @@ export default async function KlasseDetailPage({
               <tr className="border-b border-slate-200 bg-slate-50/80">
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Hinweise</th>
+                <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">🔥 Streak</th>
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Punkte</th>
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Aufgaben</th>
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Genauigkeit</th>
@@ -213,6 +226,20 @@ export default async function KlasseDetailPage({
                           <span className="text-xs text-slate-300">—</span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-right">
+                      {(() => {
+                        const streak = streakMap.get(student.user_id) ?? 0;
+                        if (streak === 0) {
+                          return <span className="text-xs text-slate-300">—</span>;
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1 font-bold text-orange-600">
+                            <span>🔥</span>
+                            <span>{streak}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-3.5 text-sm text-right font-semibold text-slate-700">
                       {stats?.points ?? 0}

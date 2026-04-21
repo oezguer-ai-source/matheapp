@@ -30,6 +30,13 @@ export interface SubmitAnswerResult {
   newDifficulty: Difficulty;
   newCorrectStreak: number;
   newIncorrectStreak: number;
+  avatar?: {
+    levelUp: boolean;
+    oldLevel: number;
+    newLevel: number;
+    xp: number;
+    currentStreak: number;
+  };
 }
 
 // Maps operator symbol to DB operation_type string (German names per DB schema)

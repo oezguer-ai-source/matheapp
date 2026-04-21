@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { GAMES } from "@/lib/config/games";
 import { fetchChildConversationAction } from "@/app/(child)/kind/nachrichten/actions";
 import { ChildChat } from "@/components/child/child-chat";
+import { fetchAvatarStateAction } from "@/lib/avatar/actions";
+import { DinoCompanion } from "@/components/child/dino-companion";
+import { StreakFlame } from "@/components/child/streak-flame";
 
 export const metadata: Metadata = {
   title: "Matheapp — Startseite",
@@ -79,16 +82,27 @@ export default async function KindDashboardPage() {
   // Chat-Daten für Floating-Bubble
   const chatData = await fetchChildConversationAction();
 
+  // Avatar + Streak
+  const avatar = await fetchAvatarStateAction();
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
       {/* Begrüßung */}
-      <div className="text-center mb-8 animate-fade-in">
-        <p className="text-4xl mb-2 animate-wiggle">👋</p>
-        <h1 className="text-3xl font-extrabold text-slate-800">
+      <div className="flex items-center justify-between mb-4 animate-fade-in">
+        <h1 className="text-2xl font-extrabold text-slate-800">
           Hallo, {displayName}!
         </h1>
-        <p className="text-lg text-slate-500 mt-1">Was möchtest du heute machen?</p>
+        <StreakFlame current={avatar.currentStreak} best={avatar.bestStreak} />
       </div>
+
+      {/* Dino-Companion */}
+      <DinoCompanion
+        level={avatar.level}
+        xp={avatar.xp}
+        dinoName={avatar.dinoName}
+        currentStreak={avatar.currentStreak}
+        displayName={displayName}
+      />
 
       {/* Punkte-Karte */}
       <div className="glass-card rounded-3xl p-6 mb-6 shadow-lg shadow-orange-100/30 animate-fade-in animation-delay-1">

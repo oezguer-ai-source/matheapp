@@ -12,6 +12,7 @@ import {
   validateOperandsForFocus,
   type ExerciseFocus,
 } from "@/lib/exercises/focus";
+import { recordActivityAction } from "@/lib/avatar/actions";
 import type {
   ClientExercise,
   Difficulty,
@@ -243,6 +244,9 @@ export async function submitAnswerAction(input: {
     return { error: "Fehler beim Speichern." };
   }
 
+  // Avatar-XP + Tages-Streak aktualisieren (nur bei positiven Punkten zählt als XP).
+  const activity = await recordActivityAction(Math.max(0, pointsEarned));
+
   return {
     data: {
       correct,
@@ -251,6 +255,15 @@ export async function submitAnswerAction(input: {
       newDifficulty,
       newCorrectStreak,
       newIncorrectStreak,
+      avatar: activity
+        ? {
+            levelUp: activity.levelUp,
+            oldLevel: activity.oldLevel,
+            newLevel: activity.newLevel,
+            xp: activity.xp,
+            currentStreak: activity.currentStreak,
+          }
+        : undefined,
     },
   };
 }

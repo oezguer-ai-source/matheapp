@@ -14,8 +14,12 @@ import {
   stopSpeaking,
 } from "@/lib/audio/feedback";
 import { AudioToggle } from "@/components/child/audio-toggle";
+import { MiniDinoReaction } from "@/components/child/mini-dino-reaction";
+import { LevelUpModal } from "@/components/child/level-up-modal";
+import { fetchAvatarStateAction } from "@/lib/avatar/actions";
 import type { ClientExercise, Difficulty, Operator, SubmitAnswerResult } from "@/lib/exercises/types";
 import type { ExerciseFocus } from "@/lib/exercises/focus";
+import type { DinoMood } from "@/components/child/dino-svg";
 
 type SessionState = "loading" | "answering" | "submitting" | "feedback" | "error";
 
@@ -46,7 +50,27 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
+  // Dino-Zustand (Begleiter)
+  const [dinoLevel, setDinoLevel] = useState(1);
+  const [dinoName, setDinoName] = useState("Rexi");
+  const [dinoMood, setDinoMood] = useState<DinoMood>("idle");
+  const [dinoCallout, setDinoCallout] = useState<string | null>(null);
+  const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
+
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dinoCalloutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetchAvatarStateAction()
+      .then((a) => {
+        setDinoLevel(a.level);
+        setDinoName(a.dinoName);
+      })
+      .catch(() => {});
+    return () => {
+      if (dinoCalloutTimerRef.current) clearTimeout(dinoCalloutTimerRef.current);
+    };
+  }, []);
 
   const loadNextExercise = useCallback(async () => {
     setState("loading");
@@ -115,10 +139,27 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
         setCorrectCount((c) => c + 1);
         playCorrect();
         speak("Super!");
+        setDinoMood("happy");
+        setDinoCallout("Super!");
       } else {
         setWrongCount((c) => c + 1);
         playWrong();
         speak(`Die richtige Antwort ist ${result.data.correctAnswer}.`);
+        setDinoMood("sad");
+        setDinoCallout("Macht nichts!");
+      }
+      if (dinoCalloutTimerRef.current) clearTimeout(dinoCalloutTimerRef.current);
+      dinoCalloutTimerRef.current = setTimeout(() => {
+        setDinoCallout(null);
+        setDinoMood("idle");
+      }, 2200);
+
+      // Avatar-Update aus Server-Response
+      if (result.data.avatar) {
+        setDinoLevel(result.data.avatar.newLevel);
+        if (result.data.avatar.levelUp) {
+          setLevelUpTo(result.data.avatar.newLevel);
+        }
       }
 
       setState("feedback");
@@ -164,7 +205,7 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
   const diffInfo = DIFFICULTY_LABELS[difficulty];
 
   return (
-    <div className={`min-h-[calc(100dvh-56px)] transition-colors duration-300 ${bgClass}`}>
+    <div className={`relative min-h-[calc(100dvh-56px)] transition-colors duration-300 ${bgClass}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <button
@@ -187,6 +228,11 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
             {diffInfo.label}
           </span>
         </div>
+      </div>
+
+      {/* Mini-Dino Reaktion */}
+      <div className="absolute top-14 right-4 z-10 pointer-events-none">
+        <MiniDinoReaction level={dinoLevel} mood={dinoMood} callout={dinoCallout} />
       </div>
 
       {/* Hauptbereich */}
@@ -313,6 +359,13 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
           </div>
         )}
       </div>
+
+      <LevelUpModal
+        open={levelUpTo !== null}
+        newLevel={levelUpTo ?? 1}
+        dinoName={dinoName}
+        onClose={() => setLevelUpTo(null)}
+      />
     </div>
   );
 }

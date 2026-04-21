@@ -159,6 +159,30 @@ export type Database = {
         }
         Relationships: []
       }
+      avatar_state: {
+        Row: {
+          child_id: string
+          dino_name: string
+          level: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          child_id: string
+          dino_name?: string
+          level?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          child_id?: string
+          dino_name?: string
+          level?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           created_at: string
@@ -376,6 +400,30 @@ export type Database = {
           id?: string
           name?: string
           subscription_tier?: string
+        }
+        Relationships: []
+      }
+      streak_state: {
+        Row: {
+          best_streak: number
+          child_id: string
+          current_streak: number
+          last_active_day: string | null
+          updated_at: string
+        }
+        Insert: {
+          best_streak?: number
+          child_id: string
+          current_streak?: number
+          last_active_day?: string | null
+          updated_at?: string
+        }
+        Update: {
+          best_streak?: number
+          child_id?: string
+          current_streak?: number
+          last_active_day?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
