@@ -12,7 +12,7 @@ import {
   validateOperandsForFocus,
   type ExerciseFocus,
 } from "@/lib/exercises/focus";
-import { recordActivityAction } from "@/lib/avatar/actions";
+import { recordActivity } from "@/lib/avatar/service";
 import type {
   ClientExercise,
   Difficulty,
@@ -245,7 +245,7 @@ export async function submitAnswerAction(input: {
   }
 
   // Avatar-XP + Tages-Streak aktualisieren (nur bei positiven Punkten zählt als XP).
-  const activity = await recordActivityAction(Math.max(0, pointsEarned));
+  const activity = await recordActivity(supabase, user.id, Math.max(0, pointsEarned));
 
   return {
     data: {
