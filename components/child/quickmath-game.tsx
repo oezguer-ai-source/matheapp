@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { GameOverScreen } from "./game-over-screen";
+import { ExitConfirmDialog } from "./exit-confirm-dialog";
 import { saveGameScoreAction } from "@/app/(child)/kind/spiel/actions";
 
 interface Props {
@@ -72,12 +74,14 @@ function makeTask(grade: number): Task {
 }
 
 export function QuickMathGame({ grade }: Props) {
+  const router = useRouter();
   const [gameState, setGameState] = useState<GameState>("idle");
   const [task, setTask] = useState<Task | null>(null);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleStart = () => {
@@ -133,6 +137,22 @@ export function QuickMathGame({ grade }: Props) {
     }
   }, [gameState, saved, score]);
 
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [gameState]);
+
+  const confirmExit = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setShowExitDialog(false);
+    router.push("/kind/spiel");
+  };
+
   if (gameState === "idle") {
     return (
       <div className="flex flex-col items-center justify-center gap-6 min-h-[60vh] p-6">
@@ -169,7 +189,15 @@ export function QuickMathGame({ grade }: Props) {
 
   return (
     <div className="flex flex-col min-h-[80vh] p-4 gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setShowExitDialog(true)}
+          aria-label="Spiel verlassen"
+          className="w-12 h-12 rounded-full bg-white text-slate-700 text-2xl font-bold flex items-center justify-center shadow-md border border-slate-200 active:scale-95"
+        >
+          ✕
+        </button>
         <div className="text-3xl font-extrabold bg-orange-100 text-orange-700 rounded-xl px-4 py-2">
           ✓ {score}
         </div>
@@ -205,6 +233,12 @@ export function QuickMathGame({ grade }: Props) {
           </button>
         ))}
       </div>
+
+      <ExitConfirmDialog
+        open={showExitDialog}
+        onCancel={() => setShowExitDialog(false)}
+        onConfirm={confirmExit}
+      />
     </div>
   );
 }

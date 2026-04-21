@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Balloon } from "./balloon";
 import { GameOverScreen } from "./game-over-screen";
+import { ExitConfirmDialog } from "./exit-confirm-dialog";
 import { saveGameScoreAction } from "@/app/(child)/kind/spiel/actions";
 
 interface BalloonData {
@@ -15,8 +17,8 @@ interface BalloonData {
 }
 
 const GAME_DURATION = 60;
-const SPAWN_INTERVAL = 800;
-const MAX_BALLOONS = 12;
+const SPAWN_INTERVAL = 1100;
+const MAX_BALLOONS = 7;
 const COLORS = [
   "bg-child-yellow",
   "bg-child-green",
@@ -30,11 +32,13 @@ const COLORS = [
 type GameState = "idle" | "playing" | "over";
 
 export function BalloonGame() {
+  const router = useRouter();
   const [gameState, setGameState] = useState<GameState>("idle");
   const [balloons, setBalloons] = useState<BalloonData[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [saved, setSaved] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const nextBalloonId = useRef(0);
   const spawnIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -66,9 +70,9 @@ export function BalloonGame() {
 
       const newBalloon: BalloonData = {
         id: nextBalloonId.current++,
-        x: Math.random() * 80 + 5,
+        x: Math.random() * 75 + 7,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        speed: Math.random() * 4 + 4,
+        speed: Math.random() * 3 + 8,
         popped: false,
         createdAt: Date.now(),
       };
@@ -140,12 +144,37 @@ export function BalloonGame() {
     }
   }, [gameState, saved, score]);
 
+  // Browser-Reload / Tab-Schliessen: Warnung während des Spiels
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [gameState]);
+
+  const handleExitClick = () => {
+    if (gameState === "playing") {
+      setShowExitDialog(true);
+    } else {
+      router.push("/kind/spiel");
+    }
+  };
+
+  const confirmExit = () => {
+    clearAllIntervals();
+    setShowExitDialog(false);
+    router.push("/kind/spiel");
+  };
+
   if (gameState === "idle") {
     return (
       <div className="flex flex-col items-center justify-center gap-6 min-h-[60vh] p-6">
         <h1 className="text-5xl font-extrabold text-child-blue">🎈 Ballonplatzen</h1>
         <p className="text-xl text-slate-600 text-center max-w-md">
-          Platze so viele Ballons wie möglich in {GAME_DURATION} Sekunden!
+          Tippe auf die Ballons, um sie zu platzen. Du hast {GAME_DURATION} Sekunden!
         </p>
         <button
           type="button"
@@ -162,28 +191,53 @@ export function BalloonGame() {
   }
 
   if (gameState === "over") {
-    return <GameOverScreen gameKey="balloon" score={score} scoreUnit="Ballons" onRestart={handleStartGame} />;
+    return (
+      <GameOverScreen
+        gameKey="balloon"
+        score={score}
+        scoreUnit="Ballons"
+        onRestart={handleStartGame}
+      />
+    );
   }
 
   return (
-    <div className="relative w-full h-[80vh] overflow-hidden bg-gradient-to-b from-sky-200 to-sky-400 rounded-2xl">
-      <div className="absolute top-4 left-4 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
-        {score}
+    <>
+      <div className="relative w-full h-[80vh] overflow-hidden bg-gradient-to-b from-sky-200 to-sky-400 rounded-2xl">
+        {/* Exit-Button */}
+        <button
+          type="button"
+          onClick={handleExitClick}
+          aria-label="Spiel verlassen"
+          className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white/80 text-slate-700 text-2xl font-bold flex items-center justify-center z-20 active:scale-95 shadow-md"
+        >
+          ✕
+        </button>
+
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
+          {score}
+        </div>
+        <div className="absolute top-4 right-4 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
+          {timeLeft}s
+        </div>
+        {balloons.map((balloon) => (
+          <Balloon
+            key={balloon.id}
+            id={balloon.id}
+            x={balloon.x}
+            color={balloon.color}
+            speed={balloon.speed}
+            onPop={handlePop}
+            popped={balloon.popped}
+          />
+        ))}
       </div>
-      <div className="absolute top-4 right-4 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
-        {timeLeft}s
-      </div>
-      {balloons.map((balloon) => (
-        <Balloon
-          key={balloon.id}
-          id={balloon.id}
-          x={balloon.x}
-          color={balloon.color}
-          speed={balloon.speed}
-          onPop={handlePop}
-          popped={balloon.popped}
-        />
-      ))}
-    </div>
+
+      <ExitConfirmDialog
+        open={showExitDialog}
+        onCancel={() => setShowExitDialog(false)}
+        onConfirm={confirmExit}
+      />
+    </>
   );
 }

@@ -14,7 +14,7 @@ export function Balloon({ id, x, color, speed, onPop, popped }: BalloonProps) {
     <button
       type="button"
       onClick={() => onPop(id)}
-      className={`absolute bottom-0 w-16 h-20 rounded-full ${color} flex flex-col items-center justify-end ${
+      className={`absolute bottom-0 w-24 h-28 rounded-full ${color} flex flex-col items-center justify-end active:scale-90 ${
         popped ? "animate-balloon-pop" : "animate-balloon-rise"
       }`}
       style={
