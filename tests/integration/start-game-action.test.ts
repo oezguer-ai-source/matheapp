@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { buildSyntheticEmail, padPin } from "@/lib/supabase/pin-email";
-import { MINIGAME_THRESHOLD } from "@/lib/config/rewards";
 import type { Database } from "@/types/database.types";
+
+// Legacy-Konstante: Spiel-Threshold wurde durch GAMES-Registry ersetzt (lib/config/games.ts).
+// Dieser Integration-Test prüfte den abgeschafften startGameAction-Flow (Punkteabzug beim Spielstart).
+// Er bleibt als Referenz erhalten, wird aber komplett übersprungen (describe.skip unten).
+const MINIGAME_THRESHOLD = 500;
 
 // Isolated admin client for minigame tests
 function minigameAdminClient() {
@@ -133,7 +137,7 @@ async function minigameSeed(): Promise<SeedResult> {
   return { schoolId, classId, teacherId, childId };
 }
 
-describe("startGameAction Integration", () => {
+describe.skip("startGameAction Integration (legacy — Flow durch GAMES-Registry ersetzt)", () => {
   let seed: SeedResult;
 
   beforeAll(async () => {

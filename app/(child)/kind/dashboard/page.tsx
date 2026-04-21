@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { MINIGAME_THRESHOLD } from "@/lib/config/rewards";
+import { GAMES } from "@/lib/config/games";
 
 export const metadata: Metadata = {
   title: "Matheapp — Startseite",
@@ -67,8 +67,12 @@ export default async function KindDashboardPage() {
     .map((p: string) => p.charAt(0).toUpperCase() + p.slice(1))
     .join(" ");
 
-  const progressPercent = Math.min((totalPoints / MINIGAME_THRESHOLD) * 100, 100);
-  const canPlay = totalPoints >= MINIGAME_THRESHOLD;
+  const firstGame = GAMES[0];
+  const unlockedCount = GAMES.filter((g) => totalPoints >= g.unlockAt).length;
+  const nextGame = GAMES.find((g) => totalPoints < g.unlockAt);
+  const nextThreshold = nextGame?.unlockAt ?? GAMES[GAMES.length - 1].unlockAt;
+  const progressPercent = Math.min((totalPoints / nextThreshold) * 100, 100);
+  const canPlay = totalPoints >= firstGame.unlockAt;
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -96,11 +100,17 @@ export default async function KindDashboardPage() {
           </div>
         </div>
 
-        {/* Progress Bar zum Spiel */}
+        {/* Progress Bar zum nächsten Spiel */}
         <div className="mt-2">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Fortschritt zum Spiel</span>
-            <span>{totalPoints} / {MINIGAME_THRESHOLD}</span>
+            <span>
+              {nextGame
+                ? `Nächstes Spiel: ${nextGame.emoji} ${nextGame.name}`
+                : `🎉 Alle ${GAMES.length} Spiele freigeschaltet!`}
+            </span>
+            <span>
+              {totalPoints} / {nextThreshold}
+            </span>
           </div>
           <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
             <div
@@ -153,21 +163,25 @@ export default async function KindDashboardPage() {
           )}
         </Link>
 
-        {/* Spiel */}
+        {/* Spiele */}
         {canPlay ? (
           <Link
             href="/kind/spiel"
             className="glass-card rounded-2xl p-5 text-center hover:scale-[1.03] active:scale-[0.98] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-4"
           >
-            <span className="text-4xl block mb-2 animate-float">🎈</span>
-            <span className="text-base font-bold text-slate-800">Spiel</span>
-            <p className="text-xs text-green-600 mt-1 font-medium">Freigeschaltet!</p>
+            <span className="text-4xl block mb-2 animate-float">🎮</span>
+            <span className="text-base font-bold text-slate-800">Spiele</span>
+            <p className="text-xs text-green-600 mt-1 font-medium">
+              {unlockedCount}/{GAMES.length} frei!
+            </p>
           </Link>
         ) : (
           <div className="glass-card rounded-2xl p-5 text-center opacity-50 cursor-not-allowed animate-fade-in animation-delay-4">
-            <span className="text-4xl block mb-2 grayscale">🎈</span>
-            <span className="text-base font-bold text-slate-400">Spiel</span>
-            <p className="text-xs text-slate-400 mt-1">Noch {MINIGAME_THRESHOLD - totalPoints} Punkte</p>
+            <span className="text-4xl block mb-2 grayscale">🎮</span>
+            <span className="text-base font-bold text-slate-400">Spiele</span>
+            <p className="text-xs text-slate-400 mt-1">
+              Noch {firstGame.unlockAt - totalPoints} Punkte
+            </p>
           </div>
         )}
       </div>

@@ -1,45 +1,34 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { BalloonGame } from "@/components/child/balloon-game";
 import { Balloon } from "@/components/child/balloon";
 import { GameOverScreen } from "@/components/child/game-over-screen";
 
-// Mock startGameAction — returns success by default
 vi.mock("@/app/(child)/kind/spiel/actions", () => ({
-  startGameAction: vi.fn().mockResolvedValue({ success: true }),
+  saveGameScoreAction: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 describe("BalloonGame", () => {
   it("rendert Spielstart-Screen im idle State", () => {
-    render(<BalloonGame currentPoints={600} />);
+    render(<BalloonGame />);
 
     expect(
-      screen.getByRole("heading", { name: /Ballonplatzen!/i })
+      screen.getByRole("heading", { name: /Ballonplatzen/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Spiel starten/i })
+      screen.getByRole("button", { name: /Los geht/i })
     ).toBeInTheDocument();
   });
 
-  it("zeigt Score-Counter bei gameState playing", async () => {
-    render(<BalloonGame currentPoints={600} />);
+  it("zeigt Score-Counter und Timer nach Spielstart", () => {
+    render(<BalloonGame />);
 
-    const startButton = screen.getByRole("button", {
-      name: /Spiel starten/i,
-    });
-    fireEvent.click(startButton);
+    fireEvent.click(screen.getByRole("button", { name: /Los geht/i }));
 
-    // After the action resolves, the game transitions to "playing" state
-    // which shows score counter and timer
-    await waitFor(() => {
-      // Score counter shows "0"
-      expect(screen.getByText("0")).toBeInTheDocument();
-    });
-
-    // Timer shows seconds
-    expect(screen.getByText("75s")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
+    expect(screen.getByText("60s")).toBeInTheDocument();
   });
 
   it("importiert nicht direkt von Supabase (SC-5)", () => {
@@ -49,33 +38,6 @@ describe("BalloonGame", () => {
     );
     expect(source).not.toMatch(/from\s+["']@\/lib\/supabase/);
     expect(source).not.toMatch(/from\s+["']@supabase/);
-  });
-
-  it("zeigt Fehlermeldung wenn startGameAction fehlschlaegt", async () => {
-    // Override mock for this test to return error
-    const { startGameAction } = await import(
-      "@/app/(child)/kind/spiel/actions"
-    );
-    vi.mocked(startGameAction).mockResolvedValueOnce({
-      success: false,
-      error: "Nicht genug Punkte.",
-    });
-
-    render(<BalloonGame currentPoints={600} />);
-
-    const startButton = screen.getByRole("button", {
-      name: /Spiel starten/i,
-    });
-    fireEvent.click(startButton);
-
-    await waitFor(() => {
-      expect(screen.getByText("Nicht genug Punkte.")).toBeInTheDocument();
-    });
-
-    // Should be back in idle state — start button visible again
-    expect(
-      screen.getByRole("button", { name: /Spiel starten/i })
-    ).toBeInTheDocument();
   });
 });
 
@@ -118,22 +80,37 @@ describe("Balloon", () => {
 });
 
 describe("GameOverScreen", () => {
-  it("zeigt Score und Dashboard-Link", () => {
-    render(<GameOverScreen score={15} />);
+  it("zeigt Score, Einheit und Nochmal-Button", () => {
+    const onRestart = vi.fn();
+    render(
+      <GameOverScreen
+        gameKey="balloon"
+        score={15}
+        scoreUnit="Ballons"
+        onRestart={onRestart}
+      />
+    );
 
-    expect(screen.getByText("15 Ballons geplatzt!")).toBeInTheDocument();
+    expect(screen.getByText("15")).toBeInTheDocument();
+    expect(screen.getByText("Ballons")).toBeInTheDocument();
     expect(screen.getByText("Geschafft!")).toBeInTheDocument();
-
-    const dashboardLink = screen.getByRole("link", {
-      name: /Zurueck zum Dashboard/i,
-    });
-    expect(dashboardLink).toBeInTheDocument();
-    expect(dashboardLink).toHaveAttribute("href", "/kind/dashboard");
+    expect(
+      screen.getByRole("button", { name: /Nochmal/i })
+    ).toBeInTheDocument();
   });
 
-  it("zeigt Score von 0 korrekt an", () => {
-    render(<GameOverScreen score={0} />);
+  it("ruft onRestart beim Klick auf Nochmal-Button", () => {
+    const onRestart = vi.fn();
+    render(
+      <GameOverScreen
+        gameKey="balloon"
+        score={0}
+        scoreUnit="Ballons"
+        onRestart={onRestart}
+      />
+    );
 
-    expect(screen.getByText("0 Ballons geplatzt!")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Nochmal/i }));
+    expect(onRestart).toHaveBeenCalledTimes(1);
   });
 });

@@ -14,89 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
-      assignments: {
-        Row: {
-          id: string
-          teacher_id: string
-          title: string
-          description: string
-          due_date: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          teacher_id: string
-          title: string
-          description?: string
-          due_date: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          teacher_id?: string
-          title?: string
-          description?: string
-          due_date?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
-      assignment_items: {
-        Row: {
-          id: string
-          assignment_id: string
-          sort_order: number
-          item_type: string
-          question: string
-          options: Json | null
-          correct_options: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          assignment_id: string
-          sort_order?: number
-          item_type: string
-          question: string
-          options?: Json | null
-          correct_options?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          assignment_id?: string
-          sort_order?: number
-          item_type?: string
-          question?: string
-          options?: Json | null
-          correct_options?: Json | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_items_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "assignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       assignment_classes: {
         Row: {
+          assigned_at: string
           assignment_id: string
           class_id: string
-          assigned_at: string
         }
         Insert: {
+          assigned_at?: string
           assignment_id: string
           class_id: string
-          assigned_at?: string
         }
         Update: {
+          assigned_at?: string
           assignment_id?: string
           class_id?: string
-          assigned_at?: string
         }
         Relationships: [
           {
@@ -115,39 +47,80 @@ export type Database = {
           },
         ]
       }
-      assignment_submissions: {
+      assignment_items: {
         Row: {
-          id: string
           assignment_id: string
-          student_id: string
-          status: string
-          started_at: string
-          submitted_at: string | null
-          duration_seconds: number | null
-          attempts_used: number
+          correct_options: Json | null
           created_at: string
+          id: string
+          item_type: string
+          options: Json | null
+          question: string
+          sort_order: number
         }
         Insert: {
-          id?: string
           assignment_id: string
-          student_id: string
-          status?: string
-          started_at?: string
-          submitted_at?: string | null
-          duration_seconds?: number | null
-          attempts_used?: number
+          correct_options?: Json | null
           created_at?: string
+          id?: string
+          item_type: string
+          options?: Json | null
+          question: string
+          sort_order?: number
         }
         Update: {
-          id?: string
           assignment_id?: string
-          student_id?: string
-          status?: string
-          started_at?: string
-          submitted_at?: string | null
-          duration_seconds?: number | null
+          correct_options?: Json | null
+          created_at?: string
+          id?: string
+          item_type?: string
+          options?: Json | null
+          question?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_items_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_submissions: {
+        Row: {
+          assignment_id: string
+          attempts_used: number
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          started_at: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+        }
+        Insert: {
+          assignment_id: string
           attempts_used?: number
           created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+        }
+        Update: {
+          assignment_id?: string
+          attempts_used?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
         }
         Relationships: [
           {
@@ -159,114 +132,32 @@ export type Database = {
           },
         ]
       }
-      submission_answers: {
+      assignments: {
         Row: {
-          id: string
-          submission_id: string
-          item_id: string
-          text_answer: string | null
-          selected_options: Json | null
-          is_correct: boolean | null
           created_at: string
-        }
-        Insert: {
-          id?: string
-          submission_id: string
-          item_id: string
-          text_answer?: string | null
-          selected_options?: Json | null
-          is_correct?: boolean | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          submission_id?: string
-          item_id?: string
-          text_answer?: string | null
-          selected_options?: Json | null
-          is_correct?: boolean | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "submission_answers_submission_id_fkey"
-            columns: ["submission_id"]
-            isOneToOne: false
-            referencedRelation: "assignment_submissions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "submission_answers_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "assignment_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
+          description: string
+          due_date: string
           id: string
-          sender_id: string
-          recipient_id: string | null
-          class_id: string | null
-          subject: string
-          body: string
-          created_at: string
+          teacher_id: string
+          title: string
         }
         Insert: {
-          id?: string
-          sender_id: string
-          recipient_id?: string | null
-          class_id?: string | null
-          subject?: string
-          body: string
           created_at?: string
+          description?: string
+          due_date: string
+          id?: string
+          teacher_id: string
+          title: string
         }
         Update: {
-          id?: string
-          sender_id?: string
-          recipient_id?: string | null
-          class_id?: string | null
-          subject?: string
-          body?: string
           created_at?: string
+          description?: string
+          due_date?: string
+          id?: string
+          teacher_id?: string
+          title?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "messages_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      message_reads: {
-        Row: {
-          message_id: string
-          user_id: string
-          read_at: string
-        }
-        Insert: {
-          message_id: string
-          user_id: string
-          read_at?: string
-        }
-        Update: {
-          message_id?: string
-          user_id?: string
-          read_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_reads_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       classes: {
         Row: {
@@ -296,6 +187,105 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_scores: {
+        Row: {
+          child_id: string
+          class_id: string | null
+          created_at: string
+          game_key: string
+          id: string
+          score: number
+        }
+        Insert: {
+          child_id: string
+          class_id?: string | null
+          created_at?: string
+          game_key: string
+          id?: string
+          score: number
+        }
+        Update: {
+          child_id?: string
+          class_id?: string | null
+          created_at?: string
+          game_key?: string
+          id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_scores_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reads: {
+        Row: {
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          class_id: string | null
+          created_at: string
+          id: string
+          recipient_id: string | null
+          sender_id: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          sender_id: string
+          subject?: string
+        }
+        Update: {
+          body?: string
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          sender_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -388,6 +378,51 @@ export type Database = {
           subscription_tier?: string
         }
         Relationships: []
+      }
+      submission_answers: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          item_id: string
+          selected_options: Json | null
+          submission_id: string
+          text_answer: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          item_id: string
+          selected_options?: Json | null
+          submission_id: string
+          text_answer?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          item_id?: string
+          selected_options?: Json | null
+          submission_id?: string
+          text_answer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_answers_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submission_answers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

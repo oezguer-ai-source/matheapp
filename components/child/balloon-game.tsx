@@ -3,11 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Balloon } from "./balloon";
 import { GameOverScreen } from "./game-over-screen";
-import { startGameAction } from "@/app/(child)/kind/spiel/actions";
-
-interface BalloonGameProps {
-  currentPoints: number;
-}
+import { saveGameScoreAction } from "@/app/(child)/kind/spiel/actions";
 
 interface BalloonData {
   id: number;
@@ -18,7 +14,7 @@ interface BalloonData {
   createdAt: number;
 }
 
-const GAME_DURATION = 75;
+const GAME_DURATION = 60;
 const SPAWN_INTERVAL = 800;
 const MAX_BALLOONS = 12;
 const COLORS = [
@@ -31,15 +27,14 @@ const COLORS = [
   "bg-orange-400",
 ];
 
-type GameState = "idle" | "starting" | "playing" | "over";
+type GameState = "idle" | "playing" | "over";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function BalloonGame({ currentPoints }: BalloonGameProps) {
+export function BalloonGame() {
   const [gameState, setGameState] = useState<GameState>("idle");
   const [balloons, setBalloons] = useState<BalloonData[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   const nextBalloonId = useRef(0);
   const spawnIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -56,27 +51,13 @@ export function BalloonGame({ currentPoints }: BalloonGameProps) {
     }
   }, []);
 
-  const handleStartGame = async () => {
-    setGameState("starting");
-    setError(null);
-
-    try {
-      const result = await startGameAction();
-      if (!result.success) {
-        setError(result.error ?? "Spiel konnte nicht gestartet werden.");
-        setGameState("idle");
-        return;
-      }
-
-      setScore(0);
-      setTimeLeft(GAME_DURATION);
-      setBalloons([]);
-      nextBalloonId.current = 0;
-      setGameState("playing");
-    } catch {
-      setError("Ein Fehler ist aufgetreten. Bitte versuche es erneut.");
-      setGameState("idle");
-    }
+  const handleStartGame = () => {
+    setScore(0);
+    setTimeLeft(GAME_DURATION);
+    setBalloons([]);
+    setSaved(false);
+    nextBalloonId.current = 0;
+    setGameState("playing");
   };
 
   const spawnBalloon = useCallback(() => {
@@ -99,21 +80,16 @@ export function BalloonGame({ currentPoints }: BalloonGameProps) {
     setBalloons((prev) => {
       const balloon = prev.find((b) => b.id === id);
       if (!balloon || balloon.popped) return prev;
-
       return prev.map((b) => (b.id === id ? { ...b, popped: true } : b));
     });
     setScore((prev) => prev + 1);
-
-    // Remove popped balloon after pop animation (300ms)
     setTimeout(() => {
       setBalloons((prev) => prev.filter((b) => b.id !== id));
     }, 300);
   }, []);
 
-  // Timer countdown
   useEffect(() => {
     if (gameState !== "playing") return;
-
     timerIntervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -124,7 +100,6 @@ export function BalloonGame({ currentPoints }: BalloonGameProps) {
         return prev - 1;
       });
     }, 1000);
-
     return () => {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
@@ -133,12 +108,9 @@ export function BalloonGame({ currentPoints }: BalloonGameProps) {
     };
   }, [gameState, clearAllIntervals]);
 
-  // Balloon spawning
   useEffect(() => {
     if (gameState !== "playing") return;
-
     spawnIntervalRef.current = setInterval(spawnBalloon, SPAWN_INTERVAL);
-
     return () => {
       if (spawnIntervalRef.current) {
         clearInterval(spawnIntervalRef.current);
@@ -147,67 +119,60 @@ export function BalloonGame({ currentPoints }: BalloonGameProps) {
     };
   }, [gameState, spawnBalloon]);
 
-  // Cleanup: remove balloons that finished their rise animation
   useEffect(() => {
     if (gameState !== "playing") return;
-
     const cleanupInterval = setInterval(() => {
       setBalloons((prev) =>
         prev.filter((b) => {
-          if (b.popped) return true; // popped balloons are handled by handlePop timeout
+          if (b.popped) return true;
           const elapsed = (Date.now() - b.createdAt) / 1000;
           return elapsed < b.speed;
         })
       );
     }, 1000);
-
     return () => clearInterval(cleanupInterval);
   }, [gameState]);
 
-  // Idle / Starting screen
-  if (gameState === "idle" || gameState === "starting") {
+  useEffect(() => {
+    if (gameState === "over" && !saved) {
+      setSaved(true);
+      saveGameScoreAction("balloon", score).catch(() => {});
+    }
+  }, [gameState, saved, score]);
+
+  if (gameState === "idle") {
     return (
-      <div className="flex flex-col items-center justify-center gap-6 min-h-[60vh]">
-        <h1 className="text-5xl font-bold text-child-blue">Ballonplatzen!</h1>
-        <p className="text-2xl text-gray-600 text-center">
-          Platze so viele Ballons wie moeglich!
+      <div className="flex flex-col items-center justify-center gap-6 min-h-[60vh] p-6">
+        <h1 className="text-5xl font-extrabold text-child-blue">🎈 Ballonplatzen</h1>
+        <p className="text-xl text-slate-600 text-center max-w-md">
+          Platze so viele Ballons wie möglich in {GAME_DURATION} Sekunden!
         </p>
-        {error && (
-          <p className="text-lg text-red-600 bg-red-50 rounded-xl px-4 py-2">
-            {error}
-          </p>
-        )}
         <button
           type="button"
           onClick={handleStartGame}
-          disabled={gameState === "starting"}
-          className="h-16 rounded-2xl bg-child-green text-white text-3xl font-semibold px-8 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 text-white text-3xl font-bold px-10 active:scale-95 transition-transform shadow-lg"
         >
-          {gameState === "starting" ? "Starte..." : "Spiel starten"}
+          Los geht&apos;s!
         </button>
+        <a href="/kind/spiel" className="text-sm text-slate-400 hover:text-slate-600">
+          ← Zurück zur Übersicht
+        </a>
       </div>
     );
   }
 
-  // Game Over screen
   if (gameState === "over") {
-    return <GameOverScreen score={score} />;
+    return <GameOverScreen gameKey="balloon" score={score} scoreUnit="Ballons" onRestart={handleStartGame} />;
   }
 
-  // Playing screen
   return (
     <div className="relative w-full h-[80vh] overflow-hidden bg-gradient-to-b from-sky-200 to-sky-400 rounded-2xl">
-      {/* Score counter */}
       <div className="absolute top-4 left-4 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
         {score}
       </div>
-
-      {/* Timer */}
       <div className="absolute top-4 right-4 text-3xl font-bold bg-white/80 rounded-xl px-4 py-2 z-10">
         {timeLeft}s
       </div>
-
-      {/* Balloons */}
       {balloons.map((balloon) => (
         <Balloon
           key={balloon.id}
