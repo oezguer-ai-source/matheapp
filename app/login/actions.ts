@@ -26,44 +26,45 @@ export async function childLogin(
     return { error: GENERIC_CHILD_ERROR };
   }
 
-  // Per RESEARCH Assumption A2 (ACCEPTED): username -> class_id lookup uses the
-  // ADMIN client (service-role key, bypasses RLS). A permissive anon-readable
-  // display_name policy would enable user enumeration attacks.
-  // TODO: If two children in different classes share the same display_name,
-  // maybeSingle() returns an error (PGRST116: multiple rows). Consider adding
-  // a class_id disambiguator to the login flow or enforcing global username uniqueness.
+  // Admin-Lookup (service-role bypasst RLS). Gibt alle Treffer zurück, weil
+  // display_name nicht global unique ist — zwei Klassen können "max.musterman"
+  // enthalten. Wir probieren den PIN gegen jedes Profil; der zum PIN passende
+  // Account gewinnt (Email enthält class_id-Prefix, also immer eindeutig).
   const admin = createAdminClient();
-  const { data: profile, error: lookupError } = await admin
+  const { data: profiles, error: lookupError } = await admin
     .from("profiles")
     .select("class_id, user_id")
     .eq("display_name", parsed.data.username)
-    .eq("role", "child")
-    .maybeSingle();
+    .eq("role", "child");
 
-  if (lookupError || !profile || !profile.class_id) {
-    return { error: GENERIC_CHILD_ERROR };
-  }
-
-  let email: string;
-  let passwordProxy: string;
-  try {
-    email = buildSyntheticEmail(parsed.data.username, profile.class_id);
-    passwordProxy = padPin(parsed.data.pin, profile.class_id);
-  } catch {
+  if (lookupError || !profiles || profiles.length === 0) {
     return { error: GENERIC_CHILD_ERROR };
   }
 
   const supabase = await createClient();
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password: passwordProxy,
-  });
+  for (const profile of profiles) {
+    if (!profile.class_id) continue;
 
-  if (signInError) {
-    return { error: GENERIC_CHILD_ERROR };
+    let email: string;
+    let passwordProxy: string;
+    try {
+      email = buildSyntheticEmail(parsed.data.username, profile.class_id);
+      passwordProxy = padPin(parsed.data.pin, profile.class_id);
+    } catch {
+      continue;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: passwordProxy,
+    });
+
+    if (!signInError) {
+      redirect("/kind/dashboard");
+    }
   }
 
-  redirect("/kind/dashboard");
+  return { error: GENERIC_CHILD_ERROR };
 }
 
 export async function teacherLogin(
