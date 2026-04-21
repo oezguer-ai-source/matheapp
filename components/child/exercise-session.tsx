@@ -6,14 +6,6 @@ import { generateExerciseAction, submitAnswerAction } from "@/app/(child)/kind/u
 import { NumberPad } from "@/components/child/number-pad";
 import { FeedbackOverlay } from "@/components/child/feedback-overlay";
 import { getHint, generateSolutionSteps } from "@/lib/exercises/solution-steps";
-import {
-  exerciseToSpeech,
-  playCorrect,
-  playWrong,
-  speak,
-  stopSpeaking,
-} from "@/lib/audio/feedback";
-import { AudioToggle } from "@/components/child/audio-toggle";
 import { MiniDinoReaction } from "@/components/child/mini-dino-reaction";
 import { LevelUpModal } from "@/components/child/level-up-modal";
 import { fetchAvatarStateAction } from "@/lib/avatar/actions";
@@ -52,7 +44,6 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
 
   // Dino-Zustand (Begleiter)
   const [dinoLevel, setDinoLevel] = useState(1);
-  const [dinoName, setDinoName] = useState("Rexi");
   const [dinoMood, setDinoMood] = useState<DinoMood>("idle");
   const [dinoCallout, setDinoCallout] = useState<string | null>(null);
   const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
@@ -64,7 +55,6 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
     fetchAvatarStateAction()
       .then((a) => {
         setDinoLevel(a.level);
-        setDinoName(a.dinoName);
       })
       .catch(() => {});
     return () => {
@@ -76,19 +66,11 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
     setState("loading");
     setShowHint(false);
     setShowSolution(false);
-    stopSpeaking();
     const result = await generateExerciseAction(grade, difficulty, operatorFilter, focus);
     if (result.data) {
       setExercise(result.data);
       setAnswer("");
       setState("answering");
-      speak(
-        exerciseToSpeech(
-          result.data.operand1,
-          result.data.operand2,
-          result.data.operator
-        )
-      );
     } else {
       setState("error");
     }
@@ -137,14 +119,10 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
 
       if (result.data.correct) {
         setCorrectCount((c) => c + 1);
-        playCorrect();
-        speak("Super!");
         setDinoMood("happy");
         setDinoCallout("Super!");
       } else {
         setWrongCount((c) => c + 1);
-        playWrong();
-        speak(`Die richtige Antwort ist ${result.data.correctAnswer}.`);
         setDinoMood("sad");
         setDinoCallout("Macht nichts!");
       }
@@ -217,7 +195,6 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3 text-sm font-semibold">
-          <AudioToggle />
           <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full">
             ✓ {correctCount}
           </span>
@@ -363,7 +340,6 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
       <LevelUpModal
         open={levelUpTo !== null}
         newLevel={levelUpTo ?? 1}
-        dinoName={dinoName}
         onClose={() => setLevelUpTo(null)}
       />
     </div>

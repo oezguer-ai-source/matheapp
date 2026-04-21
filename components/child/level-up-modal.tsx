@@ -1,26 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
 import { DinoLevel } from "./dino-svg";
 import { getDinoStage } from "@/lib/avatar/levels";
-import { playPointsEarned, speak } from "@/lib/audio/feedback";
 
 interface Props {
   open: boolean;
   newLevel: number;
-  dinoName: string;
   onClose: () => void;
 }
 
-export function LevelUpModal({ open, newLevel, dinoName, onClose }: Props) {
-  useEffect(() => {
-    if (open) {
-      playPointsEarned();
-      const stage = getDinoStage(newLevel);
-      speak(`${dinoName} ist jetzt ${stage.title}! Level ${newLevel}!`);
-    }
-  }, [open, newLevel, dinoName]);
-
+export function LevelUpModal({ open, newLevel, onClose }: Props) {
   if (!open) return null;
 
   const stage = getDinoStage(newLevel);
