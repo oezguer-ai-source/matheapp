@@ -85,7 +85,6 @@ export function ChildChat({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(mode === "page" ? true : startOpen);
   const [listening, setListening] = useState(false);
-  const [polishing, setPolishing] = useState(false);
   const [unread, setUnread] = useState(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -195,32 +194,6 @@ export function ChildChat({
     setError(null);
     setListening(true);
     rec.start();
-  };
-
-  // KI-Politur
-  const polishDraft = async () => {
-    const body = draft.trim();
-    if (!body || polishing) return;
-    setPolishing(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/kind/polish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: body }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Politur ist gerade nicht verfügbar.");
-        return;
-      }
-      const data = await res.json();
-      if (data.text) setDraft(data.text);
-    } catch {
-      setError("Politur hat nicht funktioniert.");
-    } finally {
-      setPolishing(false);
-    }
   };
 
   const grouped: Array<{ day: string; items: ChildChatMessage[] }> = [];
@@ -422,20 +395,6 @@ export function ChildChat({
                 placeholder={listening ? "Ich höre zu…" : "Schreibe oder sprich…"}
                 className="flex-1 resize-none rounded-2xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 max-h-28"
               />
-
-              {/* KI-Politur */}
-              {draft.trim().length > 0 && (
-                <button
-                  type="button"
-                  onClick={polishDraft}
-                  disabled={polishing}
-                  aria-label="Text verschönern"
-                  className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 text-white text-lg shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
-                  title="KI verschönert deinen Text"
-                >
-                  {polishing ? "…" : "✨"}
-                </button>
-              )}
 
               {/* Senden */}
               <button
