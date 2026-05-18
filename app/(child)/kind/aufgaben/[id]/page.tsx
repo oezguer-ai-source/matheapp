@@ -66,10 +66,14 @@ export default async function KindAufgabeDetailPage({
 
   // Anzeige wenn abgegeben oder gesperrt
   if (isSubmitted || isLocked) {
-    const allCorrect = existingAnswers.every((a) => a.is_correct === true || a.is_correct === null);
+    const choiceItemCount = (items ?? []).filter((i) => i.item_type === "choice").length;
     const correctCount = existingAnswers.filter((a) => a.is_correct === true).length;
     const wrongCount = existingAnswers.filter((a) => a.is_correct === false).length;
     const pendingCount = existingAnswers.filter((a) => a.is_correct === null).length;
+    // "Alles richtig" nur sinnvoll, wenn es bewertbare Multiple-Choice-Items gibt.
+    const allCorrect =
+      choiceItemCount > 0 &&
+      existingAnswers.every((a) => a.is_correct === true || a.is_correct === null);
 
     return (
       <div className="p-6 max-w-2xl mx-auto">
@@ -82,11 +86,11 @@ export default async function KindAufgabeDetailPage({
 
         {/* Ergebnis-Übersicht */}
         <div className={`glass-card rounded-2xl p-8 text-center shadow-lg animate-fade-in mb-6 ${
-          allCorrect ? "border-2 border-green-200" : isLocked ? "border-2 border-red-200" : ""
+          allCorrect ? "border-2 border-green-200" : isLocked ? "border-2 border-red-200" : "border-2 border-blue-200"
         }`}>
-          <p className="text-5xl mb-4">{allCorrect ? "🎉" : isLocked ? "🔒" : "✅"}</p>
-          <h2 className="text-xl font-bold mb-2" style={{ color: allCorrect ? "#15803d" : isLocked ? "#b91c1c" : "#15803d" }}>
-            {allCorrect ? "Alles richtig!" : isLocked ? "Gesperrt — Keine Versuche mehr" : "Abgegeben"}
+          <p className="text-5xl mb-4">{allCorrect ? "🎉" : isLocked ? "🔒" : "📝"}</p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: allCorrect ? "#15803d" : isLocked ? "#b91c1c" : "#1d4ed8" }}>
+            {allCorrect ? "Alles richtig!" : isLocked ? "Gesperrt — Keine Versuche mehr" : "Aufgabe abgegeben"}
           </h2>
           <div className="flex justify-center gap-4 mt-3 text-sm">
             {correctCount > 0 && (
@@ -101,7 +105,7 @@ export default async function KindAufgabeDetailPage({
             )}
             {pendingCount > 0 && (
               <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-semibold">
-                📝 {pendingCount} wird geprüft
+                📝 {pendingCount} {pendingCount === 1 ? "Freitext-Antwort abgegeben" : "Freitext-Antworten abgegeben"}
               </span>
             )}
           </div>
@@ -130,7 +134,7 @@ export default async function KindAufgabeDetailPage({
                   <p className="text-xs text-slate-400 font-semibold">Aufgabe {idx + 1}</p>
                   {isCorrect === true && <span className="text-xs font-bold text-green-600">✅ Richtig</span>}
                   {isCorrect === false && <span className="text-xs font-bold text-red-600">❌ Falsch</span>}
-                  {isCorrect === null && <span className="text-xs font-bold text-blue-600">📝 Wird geprüft</span>}
+                  {isCorrect === null && <span className="text-xs font-bold text-blue-600">📝 Abgegeben</span>}
                 </div>
                 <p className="text-sm font-semibold text-slate-800 mb-3">{item.question}</p>
 

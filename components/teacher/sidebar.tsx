@@ -287,6 +287,7 @@ export function Sidebar({
 
       {/* Mobile Off-Canvas-Drawer */}
       <div
+        data-app-chrome
         className={cn(
           "lg:hidden fixed inset-0 z-40 transition-opacity duration-200",
           mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"

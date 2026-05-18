@@ -16,7 +16,10 @@ export function ChildNav({ displayName }: { displayName: string }) {
   const pathname = usePathname();
 
   return (
-    <header className="relative z-20 bg-white/80 backdrop-blur-md border-b border-orange-100 px-4 py-2">
+    <header
+      data-app-chrome
+      className="relative z-20 bg-white/80 backdrop-blur-md border-b border-orange-100 px-4 py-2"
+    >
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Name */}
         <div className="flex items-center gap-2">

@@ -205,6 +205,23 @@ export default async function KindDashboardPage() {
         )}
       </div>
 
+      {/* Bericht für Eltern */}
+      <Link
+        href="/kind/bericht"
+        className="glass-card rounded-2xl p-5 mb-6 flex items-center gap-4 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-md hover:shadow-lg animate-fade-in animation-delay-4"
+      >
+        <span className="text-4xl">📊</span>
+        <div className="flex-1 min-w-0">
+          <span className="text-base font-bold text-slate-800">
+            Bericht für Eltern
+          </span>
+          <p className="text-xs text-slate-500 mt-1">
+            Lern-Fortschritt ansehen und als PDF speichern
+          </p>
+        </div>
+        <span className="text-xl text-slate-300">›</span>
+      </Link>
+
       {/* Floating Chat-Bubble */}
       <ChildChat
         initialMessages={chatData.messages ?? []}

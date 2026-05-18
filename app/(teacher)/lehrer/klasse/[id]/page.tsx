@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +8,13 @@ import {
   aggregateProgressByChild,
   type ProgressStats,
 } from "@/lib/teacher/progress";
+import {
+  computeStudentWarn,
+  hasWarn,
+  warnWeight,
+  daysInactive as computeDaysInactive,
+  type StudentWarn,
+} from "@/lib/teacher/report";
 
 export default async function KlasseDetailPage({
   params,
@@ -74,47 +82,33 @@ export default async function KlasseDetailPage({
     totalExercises += stats.total;
   }
 
-  // Warn-Berechnung: inaktiv >5 Tage, niedrige Quote <40% bei >=10 Aufgaben
-  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  type StudentWarn = {
-    inactive: boolean;
-    lowAccuracy: boolean;
-    neverActive: boolean;
-  };
+  // Warn-Berechnung (zentral in lib/teacher/report.ts).
+  const nowDate = new Date();
   const warnMap = new Map<string, StudentWarn>();
   for (const s of students ?? []) {
-    const stats = progressMap.get(s.user_id);
-    const lastMs = stats?.lastAt ? new Date(stats.lastAt).getTime() : 0;
-    const daysSince = lastMs ? (now - lastMs) / FIVE_DAYS_MS : Infinity;
-    const accuracy =
-      stats && stats.total > 0
-        ? Math.round((stats.correct / stats.total) * 100)
-        : null;
-    warnMap.set(s.user_id, {
-      inactive: lastMs > 0 && daysSince >= 1,
-      lowAccuracy: (stats?.total ?? 0) >= 10 && (accuracy ?? 100) < 40,
-      neverActive: !lastMs,
-    });
+    warnMap.set(
+      s.user_id,
+      computeStudentWarn(progressMap.get(s.user_id), nowDate)
+    );
   }
   const warnCount = (students ?? []).filter((s) => {
     const w = warnMap.get(s.user_id);
-    return w && (w.inactive || w.lowAccuracy || w.neverActive);
+    return w ? hasWarn(w) : false;
   }).length;
 
   // Sortierung: Warn-Schüler zuerst, dann alphabetisch
   const sortedStudents = [...(students ?? [])].sort((a, b) => {
     const wa = warnMap.get(a.user_id);
     const wb = warnMap.get(b.user_id);
-    const aWarn = (wa?.inactive ? 1 : 0) + (wa?.lowAccuracy ? 1 : 0) + (wa?.neverActive ? 1 : 0);
-    const bWarn = (wb?.inactive ? 1 : 0) + (wb?.lowAccuracy ? 1 : 0) + (wb?.neverActive ? 1 : 0);
+    const aWarn = wa ? warnWeight(wa) : 0;
+    const bWarn = wb ? warnWeight(wb) : 0;
     if (aWarn !== bWarn) return bWarn - aWarn;
     return a.display_name.localeCompare(b.display_name, "de");
   });
 
   return (
     <div className="p-5 sm:p-8 lg:p-12 max-w-5xl">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
             Klasse {classData.name}
@@ -123,6 +117,12 @@ export default async function KlasseDetailPage({
             {totalStudents} Schüler &middot; {totalExercises} Aufgaben gelöst &middot; {totalPoints} Punkte gesamt
           </p>
         </div>
+        <Link
+          href={`/lehrer/klasse/${classData.id}/bericht`}
+          className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+        >
+          📄 Klassen-Bericht
+        </Link>
       </div>
 
       <div className="mb-6">
@@ -178,9 +178,7 @@ export default async function KlasseDetailPage({
                   ? new Date(stats.lastAt).toLocaleDateString("de-DE")
                   : null;
                 const warn = warnMap.get(student.user_id);
-                const daysInactive = stats?.lastAt
-                  ? Math.floor((now - new Date(stats.lastAt).getTime()) / (24 * 60 * 60 * 1000))
-                  : null;
+                const daysInactive = computeDaysInactive(stats, nowDate);
 
                 return (
                   <tr
@@ -188,9 +186,12 @@ export default async function KlasseDetailPage({
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
                   >
                     <td className="px-5 py-3.5 text-sm font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
+                      <Link
+                        href={`/lehrer/klasse/${classData.id}/schueler/${student.user_id}/bericht`}
+                        className="font-medium text-indigo-700 hover:underline"
+                      >
                         {formatName(student.display_name)}
-                      </div>
+                      </Link>
                       <div className="text-[11px] text-slate-400 font-mono mt-0.5">
                         {student.display_name}
                       </div>

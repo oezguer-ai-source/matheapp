@@ -117,6 +117,7 @@ export function AssignmentSolver({
 
   const attemptsLeft = maxAttempts - attemptsUsed;
   const allCorrect = results?.every((r) => r.isCorrect === true || r.isCorrect === null);
+  const choiceItemCount = items.filter((i) => i.type === "choice").length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -148,13 +149,21 @@ export function AssignmentSolver({
         </div>
       )}
 
-      {/* Alles richtig */}
+      {/* Erfolg / Abgabe */}
       {results && allCorrect && (
-        <div className="glass-card rounded-2xl p-6 text-center shadow-md border-2 border-green-200 animate-fade-in">
-          <p className="text-4xl mb-3">🎉</p>
-          <h3 className="text-lg font-bold text-green-700">Alles richtig!</h3>
-          <p className="text-sm text-slate-600 mt-1">Super gemacht!</p>
-        </div>
+        choiceItemCount > 0 ? (
+          <div className="glass-card rounded-2xl p-6 text-center shadow-md border-2 border-green-200 animate-fade-in">
+            <p className="text-4xl mb-3">🎉</p>
+            <h3 className="text-lg font-bold text-green-700">Alles richtig!</h3>
+            <p className="text-sm text-slate-600 mt-1">Super gemacht!</p>
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl p-6 text-center shadow-md border-2 border-blue-200 animate-fade-in">
+            <p className="text-4xl mb-3">📝</p>
+            <h3 className="text-lg font-bold text-blue-700">Aufgabe abgegeben</h3>
+            <p className="text-sm text-slate-600 mt-1">Dein Lehrer schaut sich deine Antworten an.</p>
+          </div>
+        )
       )}
 
       {/* Aufgaben */}
@@ -185,7 +194,7 @@ export function AssignmentSolver({
                 <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full">❌ Falsch</span>
               )}
               {showResult && itemResult === null && (
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">📝 Wird geprüft</span>
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">📝 Abgegeben</span>
               )}
             </div>
 

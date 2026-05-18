@@ -209,6 +209,7 @@ export function ChildChat({
     return (
       <button
         type="button"
+        data-app-chrome
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-40 w-16 h-16 rounded-full bg-child-warm shadow-2xl shadow-orange-200/60 flex items-center justify-center text-3xl active:scale-95 transition-all hover:scale-105 animate-float"
         aria-label="Chat öffnen"
@@ -229,7 +230,12 @@ export function ChildChat({
       : "flex flex-col h-[calc(100dvh-4rem)] bg-gradient-to-b from-sky-50 via-white to-pink-50";
 
   return (
-    <div className={containerClasses}>
+    <div
+      className={containerClasses}
+      // Floating-Chat ist App-Chrome und wird im Druck ausgeblendet;
+      // der Vollseiten-Modus (Nachrichten-Seite) bleibt sichtbar.
+      data-app-chrome={mode === "floating" ? "" : undefined}
+    >
       {/* Dekorative Hintergrund-Seifenblasen */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
         <div className="absolute -top-16 -left-8 w-40 h-40 rounded-full bg-pink-200/40 blur-2xl" />
