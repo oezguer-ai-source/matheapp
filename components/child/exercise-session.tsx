@@ -312,7 +312,7 @@ export function ExerciseSession({ grade, operatorFilter, focus }: ExerciseSessio
             <button
               type="button"
               onClick={handleNextExercise}
-              className="w-full mt-4 h-14 rounded-2xl bg-gradient-to-r from-orange-400 to-yellow-400 text-white text-lg font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] transition-all"
+              className="w-full mt-4 h-14 rounded-2xl bg-child-cta text-white text-lg font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] transition-all"
             >
               Nächste Aufgabe →
             </button>

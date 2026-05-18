@@ -109,7 +109,7 @@ export default async function KindDashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-sm text-slate-500 font-medium">Deine Punkte</p>
-            <p className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+            <p className="text-4xl font-extrabold text-child-gradient">
               {totalPoints}
             </p>
           </div>
@@ -133,7 +133,7 @@ export default async function KindDashboardPage() {
           </div>
           <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-orange-400 via-yellow-400 to-green-400 transition-all duration-700"
+              className="h-full rounded-full bg-child-cta transition-all duration-700"
               style={{ width: `${progressPercent}%` }}
             />
           </div>

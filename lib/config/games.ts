@@ -9,6 +9,13 @@ export interface GameConfig {
   route: string;
   scoreUnit: string;
   color: string;
+  /**
+   * E1 — realistische Score-Obergrenze pro Spiel. Schuetzt vor manipulierten
+   * Punktestaenden: ein hoeherer Wert wird serverseitig abgelehnt.
+   * - balloon: ~1 Ballon/Sekunde ueber die Spieldauer ist grosszuegig bemessen.
+   * - quickmath: 60s Spielzeit, selbst <1s pro Aufgabe ergibt deutlich < 120.
+   */
+  maxScore: number;
 }
 
 export const GAMES: readonly GameConfig[] = [
@@ -21,6 +28,7 @@ export const GAMES: readonly GameConfig[] = [
     route: "/kind/spiel/ballon",
     scoreUnit: "Ballons",
     color: "from-sky-400 to-blue-500",
+    maxScore: 150,
   },
   {
     key: "quickmath",
@@ -31,6 +39,7 @@ export const GAMES: readonly GameConfig[] = [
     route: "/kind/spiel/schnellrechnen",
     scoreUnit: "Aufgaben",
     color: "from-orange-400 to-pink-500",
+    maxScore: 120,
   },
 ] as const;
 

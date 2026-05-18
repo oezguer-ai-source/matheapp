@@ -48,7 +48,23 @@ describe("Teacher Dashboard Integration", () => {
 
   beforeAll(async () => {
     admin = adminClient();
-    seed = await seedTestData();
+
+    // Test-Setup-Robustheit: Im Gesamtlauf laufen mehrere Integration-Tests
+    // parallel; das parallele Anlegen/Loeschen von Auth-Usern kann sporadisch
+    // mit "Database error creating new user" fehlschlagen. Daher mit kurzem
+    // Backoff erneut versuchen, bevor der ganze Suite-Block scheitert.
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        seed = await seedTestData();
+        lastErr = undefined;
+        break;
+      } catch (err) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 500 * attempt));
+      }
+    }
+    if (lastErr) throw lastErr;
 
     // 5 progress_entries fuer das Test-Kind einfuegen
     const entries = [
@@ -76,8 +92,11 @@ describe("Teacher Dashboard Integration", () => {
   }, 60_000);
 
   afterAll(async () => {
-    // Cleanup progress_entries fuer Test-Kind
-    await admin.from("progress_entries").delete().eq("child_id", seed.childId);
+    // Cleanup progress_entries fuer Test-Kind. seed kann undefined sein, wenn
+    // beforeAll (seedTestData) fehlschlug — dann nichts aufzuraeumen.
+    if (seed?.childId) {
+      await admin.from("progress_entries").delete().eq("child_id", seed.childId);
+    }
 
     // Cleanup zweite Schule/Klasse wenn erstellt
     if (secondChildId) {

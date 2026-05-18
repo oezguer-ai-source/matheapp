@@ -17,6 +17,15 @@
   --child-bg-start: #FFF8F0;
   --child-bg-end: #FFF0E5;
 
+  /* Zentrale Kinder-Verläufe — eine Quelle der Wahrheit, behebt
+     Doppel-Orange (#FF6B35 vs. Tailwind orange-400). */
+  --gradient-child-cta: linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%);
+  --gradient-child-cta-hover: linear-gradient(135deg, #FF7D4D 0%, #FFDA5C 100%);
+  --gradient-child-warm: linear-gradient(135deg, #EF476F 0%, #FF6B35 100%);
+  --gradient-child-cool: linear-gradient(135deg, #2BB8E0 0%, #118AB2 100%);
+  --gradient-child-go: linear-gradient(135deg, #06D6A0 0%, #02A87E 100%);
+  --gradient-child-streak: linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%);
+
   /* Lehrer-Palette */
   --teacher-primary: #4F46E5;
   --teacher-primary-light: #818CF8;
@@ -31,12 +40,25 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Kinder-Palette als Utility-Farben — nutzbar als bg-child-*, text-child-*,
+     border-child-*, from-child-*, ring-child-* usw. */
+  --color-child-primary: #FF6B35;
+  --color-child-secondary: #FFD23F;
+  --color-child-accent: #06D6A0;
   --color-child-yellow: #FFD23F;
   --color-child-green: #06D6A0;
   --color-child-red: #EF476F;
   --color-child-blue: #118AB2;
   --color-child-orange: #FF6B35;
+  --color-child-pink: #EF476F;
   --color-child-purple: #7B2FF7;
+
+  /* Lehrer-Palette als Utility-Farben */
+  --color-teacher-primary: #4F46E5;
+  --color-teacher-primary-light: #818CF8;
+  --color-teacher-accent: #06B6D4;
+
   --animate-balloon-rise: balloon-rise var(--balloon-speed, 6s) linear forwards;
   --animate-balloon-pop: balloon-pop 0.3s ease-out forwards;
 }
@@ -150,6 +172,36 @@
 }
 
 /* ============================================
+   Kinder-Verlauf-Utilities
+   Eine Quelle der Wahrheit für alle warmen CTA-Flächen.
+   ============================================ */
+.bg-child-cta {
+  background-image: var(--gradient-child-cta);
+}
+.bg-child-cta:hover:not(:disabled) {
+  background-image: var(--gradient-child-cta-hover);
+}
+.bg-child-warm {
+  background-image: var(--gradient-child-warm);
+}
+.bg-child-cool {
+  background-image: var(--gradient-child-cool);
+}
+.bg-child-go {
+  background-image: var(--gradient-child-go);
+}
+.bg-child-streak {
+  background-image: var(--gradient-child-streak);
+}
+/* Text-Verlauf für verspielte Headlines */
+.text-child-gradient {
+  background-image: var(--gradient-child-cta);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============================================
    Gradient Stat Card
    ============================================ */
 .stat-card-indigo {
@@ -181,11 +233,19 @@ body {
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
 }
 
-/* Better focus ring */
+/* Better focus ring — Standard (Lehrer-Bereich): Indigo */
 *:focus-visible {
   outline: 2px solid var(--teacher-primary);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Kinder-Bereich bekommt einen warmen, orangefarbenen Fokus-Ring.
+   Greift überall innerhalb von .child-bg (umschliesst alle Kinder-Views). */
+.child-bg *:focus-visible {
+  outline-color: var(--child-primary);
+  outline-width: 3px;
+  border-radius: 8px;
 }
 
 /* Smooth transitions — nur gezielte Eigenschaften, nicht `all`, sonst

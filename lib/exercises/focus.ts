@@ -70,12 +70,9 @@ export function generateFocusedExercise(f: ExerciseFocus): Exercise {
       };
     }
     case "add_up_to": {
-      let a = randomInt(1, f.max - 1);
-      let b = randomInt(1, f.max - a);
-      if (a + b < 2) {
-        a = 1;
-        b = 1;
-      }
+      // a >= 1 und b >= 1, daher ist a + b >= 2 stets erfuellt — kein Guard noetig.
+      const a = randomInt(1, f.max - 1);
+      const b = randomInt(1, f.max - a);
       return {
         id: crypto.randomUUID(),
         operand1: a,

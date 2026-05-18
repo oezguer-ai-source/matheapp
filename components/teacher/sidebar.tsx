@@ -1,14 +1,63 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClassAction, type ClassActionState } from "@/app/(teacher)/lehrer/actions";
+import {
+  createClassAction,
+  setClassGradeAction,
+  type ClassActionState,
+} from "@/app/(teacher)/lehrer/actions";
 import { logoutAction } from "@/app/login/actions";
+import { cn } from "@/lib/utils";
 
-type ClassItem = { id: string; name: string };
+type ClassItem = { id: string; name: string; grade: number | null };
 
 const initialState: ClassActionState = { error: null };
+
+const GRADE_OPTIONS = [1, 2, 3, 4];
+
+// Inline-Formular zum Nachpflegen der Klassenstufe einer Bestandsklasse
+// (grade = NULL). Ohne gepflegte Stufe koennen keine Schueler angelegt werden.
+function GradeEditor({ classId }: { classId: string }) {
+  const [state, formAction, pending] = useActionState(
+    setClassGradeAction,
+    initialState
+  );
+
+  return (
+    <form action={formAction} className="mt-1.5 px-1">
+      <input type="hidden" name="classId" value={classId} />
+      <div className="flex gap-1.5">
+        <select
+          name="grade"
+          required
+          defaultValue=""
+          className="flex-1 h-8 px-2 text-xs rounded-lg bg-white/10 border border-amber-400/40 text-white focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        >
+          <option value="" disabled>
+            Stufe wählen
+          </option>
+          {GRADE_OPTIONS.map((g) => (
+            <option key={g} value={g} className="text-slate-900">
+              Klasse {g}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={pending}
+          className="h-8 px-3 text-xs rounded-lg bg-indigo-500 hover:bg-indigo-400 font-medium disabled:opacity-50 transition-colors"
+        >
+          {pending ? "…" : "OK"}
+        </button>
+      </div>
+      {state.error && (
+        <p className="text-[11px] text-red-400 mt-1 px-1">{state.error}</p>
+      )}
+    </form>
+  );
+}
 
 const NAV_ITEMS = [
   { href: "/lehrer/dashboard", label: "Dashboard", icon: (
@@ -37,6 +86,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [state, formAction, pending] = useActionState(createClassAction, initialState);
 
   if (state.success && showAddForm) {
@@ -44,8 +94,13 @@ export function Sidebar({
     state.success = false;
   }
 
-  return (
-    <aside className="w-72 teacher-sidebar text-white flex flex-col min-h-dvh shrink-0">
+  // Drawer bei Navigation schliessen.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const sidebarBody = (
+    <>
       {/* Lehrer-Profil */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -59,7 +114,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-6 flex flex-col gap-8">
+      <nav className="flex-1 px-4 py-6 flex flex-col gap-8 overflow-y-auto">
         {/* Hauptnavigation */}
         <div>
           <p className="text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-3 px-3">
@@ -107,16 +162,31 @@ export function Sidebar({
           </div>
 
           {showAddForm && (
-            <form action={formAction} className="mb-3 px-1">
+            <form action={formAction} className="mb-3 px-1 space-y-1.5">
+              <input
+                type="text"
+                name="className"
+                placeholder="z. B. 3a"
+                required
+                autoFocus
+                className="w-full h-9 px-3 text-sm rounded-lg bg-white/10 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
               <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  name="className"
-                  placeholder="z. B. 3a"
+                <select
+                  name="grade"
                   required
-                  autoFocus
-                  className="flex-1 h-9 px-3 text-sm rounded-lg bg-white/10 border border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                />
+                  defaultValue=""
+                  className="flex-1 h-9 px-2 text-sm rounded-lg bg-white/10 border border-white/10 text-white focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                >
+                  <option value="" disabled>
+                    Klassenstufe
+                  </option>
+                  {GRADE_OPTIONS.map((g) => (
+                    <option key={g} value={g} className="text-slate-900">
+                      Klasse {g}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="submit"
                   disabled={pending}
@@ -153,8 +223,21 @@ export function Sidebar({
                       <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xs font-bold text-cyan-300 border border-cyan-500/20">
                         {cls.name.slice(0, 2)}
                       </span>
-                      {cls.name}
+                      <span className="flex-1 min-w-0 truncate">{cls.name}</span>
+                      {cls.grade != null && (
+                        <span className="text-[10px] font-semibold text-slate-500 shrink-0">
+                          Stufe {cls.grade}
+                        </span>
+                      )}
                     </Link>
+                    {cls.grade == null && (
+                      <div className="ml-3 mr-1">
+                        <p className="text-[11px] text-amber-400 px-1">
+                          Klassenstufe fehlt — bitte nachpflegen:
+                        </p>
+                        <GradeEditor classId={cls.id} />
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -177,6 +260,68 @@ export function Sidebar({
           </button>
         </form>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile-Topbar mit Burger — nur unter lg sichtbar */}
+      <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 h-14 px-4 teacher-sidebar text-white">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Menü öffnen"
+          className="w-9 h-9 -ml-1 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+          </svg>
+        </button>
+        <span className="text-sm font-semibold">Lehrer-Bereich</span>
+      </header>
+
+      {/* Desktop-Sidebar — ab lg fest */}
+      <aside className="hidden lg:flex w-72 teacher-sidebar text-white flex-col min-h-dvh shrink-0">
+        {sidebarBody}
+      </aside>
+
+      {/* Mobile Off-Canvas-Drawer */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 z-40 transition-opacity duration-200",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+        {/* Panel */}
+        <aside
+          className={cn(
+            "absolute inset-y-0 left-0 w-72 max-w-[85vw] teacher-sidebar text-white flex flex-col shadow-2xl transition-transform duration-200",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+          role="dialog"
+          aria-label="Navigation"
+        >
+          <div className="flex justify-end p-2">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Menü schließen"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {sidebarBody}
+        </aside>
+      </div>
+    </>
   );
 }

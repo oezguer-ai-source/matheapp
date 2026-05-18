@@ -186,6 +186,7 @@ export type Database = {
       classes: {
         Row: {
           created_at: string
+          grade: number | null
           id: string
           name: string
           school_id: string
@@ -193,6 +194,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          grade?: number | null
           id?: string
           name: string
           school_id: string
@@ -200,6 +202,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          grade?: number | null
           id?: string
           name?: string
           school_id?: string
@@ -477,7 +480,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      upgrade_school_tier: {
+        Args: {
+          tier: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -10,6 +10,19 @@ vi.mock("@/app/(child)/kind/spiel/actions", () => ({
   saveGameScoreAction: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+// next/navigation: useRouter braucht im Test einen gemockten Router,
+// sonst wirft "invariant expected app router to be mounted".
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+
 describe("BalloonGame", () => {
   it("rendert Spielstart-Screen im idle State", () => {
     render(<BalloonGame />);

@@ -31,20 +31,11 @@ export async function upgradeSubscriptionAction(formData: FormData): Promise<voi
 
   if (!profile?.class_id) redirect("/kind/dashboard");
 
-  const { data: cls } = await supabase
-    .from("classes")
-    .select("school_id")
-    .eq("id", profile.class_id)
-    .single();
-
-  if (!cls?.school_id) redirect("/kind/dashboard");
-
-  // Subscription-Tier setzen (D-09: kein echtes Payment, simulierter Checkout)
-  // T-60-02: RLS beschraenkt UPDATE auf eigene Schule
-  const { error } = await supabase
-    .from("schools")
-    .update({ subscription_tier: tier })
-    .eq("id", cls.school_id);
+  // Subscription-Tier setzen (D-09: kein echtes Payment, simulierter Checkout).
+  // Audit H3: Das direkte UPDATE auf schools wurde durch die SECURITY-DEFINER-RPC
+  // upgrade_school_tier ersetzt. Sie validiert Rolle und Tier server-seitig und
+  // aendert ausschliesslich subscription_tier der eigenen Schule.
+  const { error } = await supabase.rpc("upgrade_school_tier", { tier });
 
   if (error) throw new Error("Upgrade fehlgeschlagen.");
 

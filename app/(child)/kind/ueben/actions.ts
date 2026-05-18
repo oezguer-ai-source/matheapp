@@ -1,18 +1,21 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { generateExercise } from "@/lib/exercises/generators";
-import { compute } from "@/lib/exercises/generators";
+import { generateExercise, compute } from "@/lib/exercises/generators";
 import { computeNewDifficulty } from "@/lib/exercises/difficulty";
 import { calculatePoints } from "@/lib/exercises/points";
 import { OPERATOR_TO_TYPE } from "@/lib/exercises/types";
-import { RANGES } from "@/lib/exercises/config";
 import {
   generateFocusedExercise,
   validateOperandsForFocus,
   type ExerciseFocus,
 } from "@/lib/exercises/focus";
+import {
+  deriveDifficultyFromOperands,
+  deriveDifficultyFromFocus,
+} from "@/lib/exercises/derive-difficulty";
 import { recordActivity } from "@/lib/avatar/service";
+import { getSchoolSubscriptionTier, isGated } from "@/lib/subscription/queries";
 import type {
   ClientExercise,
   Difficulty,
@@ -27,57 +30,27 @@ import {
 } from "@/lib/schemas/exercise";
 
 /**
- * Validate that submitted operands are plausible for the child's grade and difficulty.
- * Prevents trivial-exercise forgery (CR-01) without requiring server-side exercise storage.
+ * E2 — Abo-Gating: Prueft serverseitig, ob das Kind durch das Subscription-Gate
+ * blockiert wird (Klasse 4 ohne aktives Abo). Liefert eine Fehlermeldung oder
+ * `null`, wenn der Zugriff erlaubt ist.
  */
-function validateOperandsForGrade(
-  operand1: number,
-  operand2: number,
-  operator: Operator,
-  grade: Grade,
-  difficulty: Difficulty
-): boolean {
-  const config = RANGES[grade][difficulty];
+async function assertNotGated(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<string | null> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("grade_level")
+    .eq("user_id", userId)
+    .maybeSingle();
 
-  // Operator must be allowed for this grade/difficulty
-  if (!config.operators.includes(operator)) {
-    return false;
+  const grade = profile?.grade_level ?? 0;
+  const tier = await getSchoolSubscriptionTier(supabase, userId);
+
+  if (isGated(grade, tier)) {
+    return "Dieser Bereich ist im aktuellen Abo nicht freigeschaltet.";
   }
-
-  // Operands must be within the configured range (with allowances for generated patterns)
-  switch (operator) {
-    case "+":
-    case "*":
-      // Both operands must be in [min, max]
-      return (
-        operand1 >= config.min &&
-        operand1 <= config.max &&
-        operand2 >= config.min &&
-        operand2 <= config.max
-      );
-
-    case "-":
-      // Both operands in range, and operand1 >= operand2 (no negative results)
-      return (
-        operand1 >= config.min &&
-        operand1 <= config.max &&
-        operand2 >= config.min &&
-        operand2 <= config.max &&
-        operand1 >= operand2
-      );
-
-    case "/":
-      // Answer-first approach: divisor in [max(2,min), max], dividend = quotient * divisor
-      // Divisor must be >= 2, dividend must divide evenly
-      if (operand2 < 2 || operand2 > config.max) return false;
-      if (operand1 % operand2 !== 0) return false;
-      // Quotient must be >= 1 and divisor must be in valid range
-      const quotient = operand1 / operand2;
-      if (quotient < 1) return false;
-      // Dividend (operand1) can exceed config.max due to multiplication, but divisor must be in range
-      if (operand2 < Math.max(2, config.min)) return false;
-      return true;
-  }
+  return null;
 }
 
 export async function generateExerciseAction(
@@ -97,6 +70,12 @@ export async function generateExerciseAction(
   } = await supabase.auth.getUser();
   if (!user) {
     return { error: "Nicht angemeldet." };
+  }
+
+  // E2 — Abo-Gating serverseitig: Klasse 4 ohne aktives Abo wird blockiert.
+  const gateError = await assertNotGated(supabase, user.id);
+  if (gateError) {
+    return { error: gateError };
   }
 
   // Focus-Modus: gezielte Aufgabe (Einmaleins mit 7, Plus bis 20, etc.)
@@ -167,6 +146,12 @@ export async function submitAnswerAction(input: {
     return { error: "Nicht angemeldet." };
   }
 
+  // E2 — Abo-Gating serverseitig auch beim Absenden durchsetzen.
+  const gateError = await assertNotGated(supabase, user.id);
+  if (gateError) {
+    return { error: gateError };
+  }
+
   // Get child's grade from profile for the progress_entry record
   const { data: profile } = await supabase
     .from("profiles")
@@ -189,22 +174,30 @@ export async function submitAnswerAction(input: {
     focus,
   } = parsed.data;
 
-  // Validation: Focus-Modus hat eigene Regeln, sonst Range-Check gegen Klassenstufe (CR-01)
+  // Validation: Focus-Modus hat eigene Regeln, sonst Range-Check gegen Klassenstufe (CR-01).
+  // D1 — Punkte-Manipulation: `effectiveDifficulty` wird serverseitig aus den
+  // tatsaechlichen Operanden (bzw. dem Fokus) abgeleitet und ist die einzige
+  // Grundlage fuer die Punktevergabe. Der Client-Wert `currentDifficulty` wird
+  // NICHT mehr fuer Punkte verwendet (nur noch fuer die Streak-/Promotion-Logik,
+  // die selbst keine Punkte vergibt).
   const grade = profile.grade_level as Grade;
+  let effectiveDifficulty: Difficulty;
   if (focus) {
     if (!validateOperandsForFocus(operand1, operand2, operator as Operator, focus)) {
       return { error: "Ungueltige Aufgabe fuer diesen Fokus." };
     }
-  } else if (
-    !validateOperandsForGrade(
+    effectiveDifficulty = deriveDifficultyFromFocus(focus);
+  } else {
+    const derived = deriveDifficultyFromOperands(
       operand1,
       operand2,
       operator as Operator,
-      grade,
-      currentDifficulty as Difficulty
-    )
-  ) {
-    return { error: "Ungueltige Aufgabe fuer diese Klassenstufe." };
+      grade
+    );
+    if (derived === null) {
+      return { error: "Ungueltige Aufgabe fuer diese Klassenstufe." };
+    }
+    effectiveDifficulty = derived;
   }
 
   // Server re-computes correct answer from operands (Pattern 3)
@@ -217,7 +210,10 @@ export async function submitAnswerAction(input: {
 
   const correct = userAnswer === correctAnswer;
 
-  const pointsEarned = calculatePoints(correct, currentDifficulty as Difficulty);
+  // D1 — Punkte aus der serverseitig abgeleiteten Schwierigkeit, nie aus dem
+  // Client-Wert. So bringt eine triviale 1+1-Aufgabe nur Easy-Punkte (10),
+  // egal welches `currentDifficulty` der Client behauptet.
+  const pointsEarned = calculatePoints(correct, effectiveDifficulty);
 
   // Compute new streaks
   const newCorrectStreak = correct ? correctStreak + 1 : 0;

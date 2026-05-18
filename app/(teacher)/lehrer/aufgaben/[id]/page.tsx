@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatName } from "@/lib/teacher/format";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "--";
@@ -69,6 +70,58 @@ export default async function AufgabeDetailPage({
   const submissionByStudent = new Map(
     (submissions ?? []).map((s) => [s.student_id, s])
   );
+
+  // Antworten aller Abgaben in einer Query laden (kein N+1)
+  const submissionIds = (submissions ?? []).map((s) => s.id);
+  let answers: {
+    submission_id: string;
+    item_id: string;
+    selected_options: number[] | null;
+    text_answer: string | null;
+  }[] = [];
+  if (submissionIds.length > 0) {
+    const { data } = await admin
+      .from("submission_answers")
+      .select("submission_id, item_id, selected_options, text_answer")
+      .in("submission_id", submissionIds);
+    answers = (data ?? []).map((a) => ({
+      submission_id: a.submission_id,
+      item_id: a.item_id,
+      selected_options: a.selected_options as number[] | null,
+      text_answer: a.text_answer,
+    }));
+  }
+
+  // Antworten nach submission_id gruppieren -> Map<itemId, answer>
+  const answersBySubmission = new Map<string, Map<string, (typeof answers)[number]>>();
+  for (const ans of answers) {
+    let inner = answersBySubmission.get(ans.submission_id);
+    if (!inner) {
+      inner = new Map();
+      answersBySubmission.set(ans.submission_id, inner);
+    }
+    inner.set(ans.item_id, ans);
+  }
+
+  // Items als Map fuer schnellen Zugriff bei der Auswertung
+  const itemList = items ?? [];
+  const choiceItemCount = itemList.filter((it) => it.item_type === "choice").length;
+
+  /**
+   * Bewertet eine MC-Antwort live: selected_options muss exakt der Menge
+   * correct_options entsprechen. Keine Persistenz noetig - der Lehrer-View
+   * ist read-only, eine berechnete Anzeige ist robuster und vermeidet
+   * Admin-Schreibzugriffe bei jedem Seitenaufruf.
+   */
+  function isChoiceCorrect(
+    correct: number[] | null | undefined,
+    selected: number[] | null | undefined
+  ): boolean {
+    const c = [...(correct ?? [])].sort((a, b) => a - b);
+    const s = [...(selected ?? [])].sort((a, b) => a - b);
+    if (c.length !== s.length || c.length === 0) return false;
+    return c.every((v, i) => v === s[i]);
+  }
 
   const dueDate = new Date(assignment.due_date);
   const isOverdue = dueDate < new Date();
@@ -153,61 +206,152 @@ export default async function AufgabeDetailPage({
             </CardContent>
           </Card>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">
-                    Schüler
-                  </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">
-                    Status
-                  </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">
-                    Dauer
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {allStudents.map((student) => {
-                  const sub = submissionByStudent.get(student.user_id);
-                  const statusLabel = !sub
-                    ? "Nicht begonnen"
-                    : sub.status === "submitted"
-                      ? "Abgegeben"
-                      : "In Bearbeitung";
-                  const statusColor = !sub
-                    ? "bg-slate-100 text-slate-500"
-                    : sub.status === "submitted"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-amber-50 text-amber-600";
+          <div className="space-y-3">
+            {allStudents.map((student) => {
+              const sub = submissionByStudent.get(student.user_id);
+              const statusLabel = !sub
+                ? "Nicht begonnen"
+                : sub.status === "submitted"
+                  ? "Abgegeben"
+                  : "In Bearbeitung";
+              const statusColor = !sub
+                ? "bg-slate-100 text-slate-500"
+                : sub.status === "submitted"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-amber-50 text-amber-600";
 
-                  return (
-                    <tr
-                      key={student.user_id}
-                      className="border-b border-slate-100 last:border-0"
-                    >
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                        {student.display_name
-                          .split(".")
-                          .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-                          .join(" ")}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor}`}
-                        >
-                          {statusLabel}
+              const studentName = formatName(student.display_name);
+
+              const itemAnswers = sub
+                ? answersBySubmission.get(sub.id) ?? new Map()
+                : new Map();
+
+              // MC-Quote berechnen
+              let choiceCorrect = 0;
+              for (const item of itemList) {
+                if (item.item_type !== "choice") continue;
+                const ans = itemAnswers.get(item.id);
+                if (
+                  ans &&
+                  isChoiceCorrect(
+                    item.correct_options as number[] | null,
+                    ans.selected_options
+                  )
+                ) {
+                  choiceCorrect += 1;
+                }
+              }
+
+              const hasAnswers = itemAnswers.size > 0;
+
+              return (
+                <Card key={student.user_id}>
+                  <CardContent className="pt-4 pb-4">
+                    {/* Kopfzeile pro Schüler */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm font-medium text-slate-900 mr-auto">
+                        {studentName}
+                      </span>
+                      {choiceItemCount > 0 && hasAnswers && (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                          {choiceCorrect}/{choiceItemCount} richtig (MC)
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
+                      )}
+                      <span className="text-xs text-slate-500">
                         {formatDuration(sub?.duration_seconds ?? null)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor}`}
+                      >
+                        {statusLabel}
+                      </span>
+                    </div>
+
+                    {/* Auswertung pro Item */}
+                    {hasAnswers && (
+                      <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                        {itemList.map((item, idx) => {
+                          const ans = itemAnswers.get(item.id);
+
+                          if (!ans) {
+                            return (
+                              <li
+                                key={item.id}
+                                className="text-sm text-slate-400"
+                              >
+                                {idx + 1}. {item.question} — keine Antwort
+                              </li>
+                            );
+                          }
+
+                          if (item.item_type === "choice") {
+                            const correct = isChoiceCorrect(
+                              item.correct_options as number[] | null,
+                              ans.selected_options
+                            );
+                            const opts = (item.options as string[] | null) ?? [];
+                            const selectedLabels = (ans.selected_options ?? [])
+                              .map((o: number) => opts[o])
+                              .filter(Boolean)
+                              .join(", ");
+                            return (
+                              <li key={item.id} className="text-sm">
+                                <span className="text-slate-500">
+                                  {idx + 1}.{" "}
+                                </span>
+                                <span className="text-slate-900">
+                                  {item.question}
+                                </span>
+                                <div className="mt-0.5 flex items-center gap-2">
+                                  <span
+                                    className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                      correct
+                                        ? "bg-green-50 text-green-700"
+                                        : "bg-red-50 text-red-600"
+                                    }`}
+                                  >
+                                    {correct ? "✓ richtig" : "✗ falsch"}
+                                  </span>
+                                  <span className="text-xs text-slate-500">
+                                    Antwort:{" "}
+                                    {selectedLabels || "keine Auswahl"}
+                                  </span>
+                                </div>
+                              </li>
+                            );
+                          }
+
+                          // Freitext — manuelle Sichtung durch Lehrer
+                          return (
+                            <li key={item.id} className="text-sm">
+                              <span className="text-slate-500">
+                                {idx + 1}.{" "}
+                              </span>
+                              <span className="text-slate-900">
+                                {item.question}
+                              </span>
+                              <div className="mt-1 rounded-md bg-slate-50 border border-slate-100 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
+                                {ans.text_answer?.trim() || (
+                                  <span className="text-slate-400">
+                                    keine Antwort
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    {sub && !hasAnswers && (
+                      <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-400">
+                        Noch keine Antworten erfasst.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

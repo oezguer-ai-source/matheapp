@@ -9,6 +9,7 @@ export default async function KindAufgabenPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Klassenzugehoerigkeit ueber den RLS-Client ermitteln (eigenes Profil).
   const { data: profile } = await supabase
     .from("profiles")
     .select("class_id")
@@ -24,6 +25,9 @@ export default async function KindAufgabenPage() {
     );
   }
 
+  // Ab hier mit dem RLS-gebundenen Client lesen: Die Policies auf
+  // assignment_classes/assignments begrenzen die Sichtbarkeit bereits auf die
+  // eigene Klasse. Der explizite class_id-Filter bleibt als Defense-in-Depth.
   // Zugewiesene Aufgaben laden
   const { data: assignedRows } = await supabase
     .from("assignment_classes")
@@ -42,7 +46,8 @@ export default async function KindAufgabenPage() {
     );
   }
 
-  // Aufgaben laden
+  // Aufgaben laden — KEIN due_date-Filter: abgelaufene Aufgaben bleiben
+  // sichtbar und werden unten als "Ueberfaellig" markiert.
   const { data: assignments } = await supabase
     .from("assignments")
     .select("id, title, description, due_date")

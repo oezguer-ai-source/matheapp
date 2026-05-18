@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getGame } from "@/lib/config/games";
+import { getTotalPoints } from "@/lib/exercises/points";
+import { getSchoolSubscriptionTier, isGated } from "@/lib/subscription/queries";
 import { QuickMathGame } from "@/components/child/quickmath-game";
 
 export const metadata: Metadata = {
@@ -23,15 +25,13 @@ export default async function QuickMathPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: entries } = await supabase
-    .from("progress_entries")
-    .select("points_earned")
-    .eq("child_id", user.id);
+  // E2 — Abo-Gating: Klasse 4 ohne aktives Abo wird zur Upgrade-Seite geleitet.
+  const tier = await getSchoolSubscriptionTier(supabase, user.id);
+  if (isGated(profile?.grade_level ?? 0, tier)) {
+    redirect("/kind/upgrade");
+  }
 
-  const totalPoints = (entries ?? []).reduce(
-    (sum, e) => sum + (e.points_earned ?? 0),
-    0
-  );
+  const totalPoints = await getTotalPoints(supabase, user.id);
 
   const game = getGame("quickmath");
   if (totalPoints < game.unlockAt) {

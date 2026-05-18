@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { StudentOverview, OperationAccuracy } from "@/types/teacher-dashboard";
+import { aggregateProgressByChild, computeAccuracy } from "@/lib/teacher/progress";
 
 const OPERATION_TYPES = [
   "addition",
@@ -59,32 +60,8 @@ export async function fetchClassOverview(
     .in("child_id", childIds)
     .neq("operation_type", "minigame_redeem");
 
-  // Schritt 4: Client-seitig aggregieren
-  const entriesByChild = new Map<
-    string,
-    { points: number; total: number; correct: number; lastAt: string | null }
-  >();
-
-  for (const entry of entries ?? []) {
-    const existing = entriesByChild.get(entry.child_id) ?? {
-      points: 0,
-      total: 0,
-      correct: 0,
-      lastAt: null as string | null,
-    };
-
-    existing.points += entry.points_earned ?? 0;
-    existing.total += 1;
-    if (entry.correct) existing.correct += 1;
-    if (
-      entry.created_at &&
-      (!existing.lastAt || entry.created_at > existing.lastAt)
-    ) {
-      existing.lastAt = entry.created_at;
-    }
-
-    entriesByChild.set(entry.child_id, existing);
-  }
+  // Schritt 4: Client-seitig aggregieren (PostgREST kann kein GROUP BY)
+  const entriesByChild = aggregateProgressByChild(entries);
 
   // StudentOverview-Objekte bauen und alphabetisch sortieren
   const overviews: StudentOverview[] = children.map((child) => {
@@ -99,7 +76,7 @@ export async function fetchClassOverview(
       totalPoints: stats?.points ?? 0,
       exerciseCount,
       correctCount,
-      accuracy: exerciseCount > 0 ? Math.round((correctCount / exerciseCount) * 100) : 0,
+      accuracy: computeAccuracy(correctCount, exerciseCount),
       lastActivity: stats?.lastAt ?? null,
     };
   });

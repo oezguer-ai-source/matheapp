@@ -27,7 +27,7 @@ export function RoleToggle({
         className={cn(
           "flex-1 h-14 rounded-xl text-lg font-bold transition-all duration-300",
           value === "child"
-            ? "bg-gradient-to-r from-orange-400 to-yellow-400 text-white shadow-lg shadow-orange-200/50 scale-[1.02]"
+            ? "bg-child-cta text-white shadow-lg shadow-orange-200/50 scale-[1.02]"
             : "bg-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
         )}
       >

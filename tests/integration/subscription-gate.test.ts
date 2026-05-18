@@ -276,7 +276,7 @@ describe("Subscription Gate Integration", () => {
       expect(data!.subscription_tier).toBe("free");
     }, 15_000);
 
-    it("child can update subscription_tier of own school (child_upgrades_own_school)", async () => {
+    it("child cannot directly UPDATE subscription_tier (H3: child_upgrades_own_school entfernt)", async () => {
       // Login as child
       const childClient = createClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -293,14 +293,52 @@ describe("Subscription Gate Integration", () => {
       });
       expect(signInErr).toBeNull();
 
-      // Child upgrades own school
-      const { error } = await childClient
+      // Direktes UPDATE muss seit Migration 20260518000001 (H3) wirkungslos
+      // sein: Die Policy "child_upgrades_own_school" wurde entfernt, es gibt
+      // keine UPDATE-Policy fuer Kinder mehr. PostgREST liefert hier keinen
+      // Fehler, sondern ein leeres Ergebnis (RLS filtert die betroffene Zeile).
+      const { data: updated, error } = await childClient
         .from("schools")
         .update({ subscription_tier: "grundschule" })
-        .eq("id", seed.schoolId);
+        .eq("id", seed.schoolId)
+        .select("subscription_tier");
+      expect(error).toBeNull();
+      expect(updated ?? []).toEqual([]);
+
+      // Verify: Tier ist unveraendert 'free' geblieben.
+      const admin = subAdminClient();
+      const { data } = await admin
+        .from("schools")
+        .select("subscription_tier")
+        .eq("id", seed.schoolId)
+        .single();
+      expect(data!.subscription_tier).toBe("free");
+    }, 15_000);
+
+    it("child upgrades own school via RPC upgrade_school_tier (H3)", async () => {
+      // Login as child
+      const childClient = createClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      );
+      const childEmail = buildSyntheticEmail(
+        SUB_TEST_CHILD.username,
+        seed.classId
+      );
+      const childPassword = padPin(SUB_TEST_CHILD.pin, seed.classId);
+      const { error: signInErr } = await childClient.auth.signInWithPassword({
+        email: childEmail,
+        password: childPassword,
+      });
+      expect(signInErr).toBeNull();
+
+      // Upgrade ueber die SECURITY-DEFINER-RPC.
+      const { error } = await childClient.rpc("upgrade_school_tier", {
+        tier: "grundschule",
+      });
       expect(error).toBeNull();
 
-      // Verify the update worked
+      // Verify the RPC worked
       const admin = subAdminClient();
       const { data } = await admin
         .from("schools")
@@ -348,7 +386,7 @@ describe("Subscription Gate Integration", () => {
   // ── 4. Upgrade flow ──────────────────────────────────────────────────
 
   describe("Upgrade flow via DB", () => {
-    it("child upgrades school from free to grundschule", async () => {
+    it("child upgrades school from free to grundschule (via RPC)", async () => {
       const admin = subAdminClient();
 
       // Verify starting tier
@@ -374,11 +412,11 @@ describe("Subscription Gate Integration", () => {
         password: childPassword,
       });
 
-      // Simulate what the Server Action does: update subscription_tier
-      const { error } = await childClient
-        .from("schools")
-        .update({ subscription_tier: "grundschule" })
-        .eq("id", seed.schoolId);
+      // Simulate what the Server Action does: upgrade ueber die RPC
+      // upgrade_school_tier (H3 — ersetzt das frueher direkte UPDATE).
+      const { error } = await childClient.rpc("upgrade_school_tier", {
+        tier: "grundschule",
+      });
       expect(error).toBeNull();
 
       // Verify via admin

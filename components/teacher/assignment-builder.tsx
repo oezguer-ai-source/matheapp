@@ -129,14 +129,18 @@ export function AssignmentBuilder({
 
     setSubmitting(true);
     try {
+      // dueDate kommt als YYYY-MM-DD aus dem date-Input — fuer das Zod-Schema
+      // (datetime) in einen ISO-Zeitstempel (Tagesende) umwandeln.
+      const dueDateIso = new Date(`${dueDate}T23:59:59`).toISOString();
+
       const result = await createAssignmentAction({
         title: title.trim(),
         description: description.trim(),
-        dueDate,
+        dueDate: dueDateIso,
         classIds: selectedClasses,
         items: items.map((i, idx) => ({
           sortOrder: idx,
-          type: i.type,
+          itemType: i.type,
           question: i.question.trim(),
           options: i.type === "choice" ? i.options.filter((o) => o.trim()) : undefined,
           correctOptions: i.type === "choice" ? i.correctOptions : undefined,

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { GAMES } from "@/lib/config/games";
+import { getTotalPoints } from "@/lib/exercises/points";
 import { ClassLeaderboard } from "@/components/child/class-leaderboard";
 
 export const metadata: Metadata = {
@@ -26,15 +27,7 @@ export default async function SpielHubPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: entries } = await supabase
-    .from("progress_entries")
-    .select("points_earned")
-    .eq("child_id", user.id);
-
-  const totalPoints = (entries ?? []).reduce(
-    (sum, e) => sum + (e.points_earned ?? 0),
-    0
-  );
+  const totalPoints = await getTotalPoints(supabase, user.id);
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -48,7 +41,7 @@ export default async function SpielHubPage() {
 
       <div className="glass-card rounded-3xl p-5 mb-6 text-center shadow-lg shadow-orange-100/30 animate-fade-in">
         <p className="text-sm text-slate-500 font-medium">Deine Punkte</p>
-        <p className="text-5xl font-extrabold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+        <p className="text-5xl font-extrabold text-child-gradient">
           {totalPoints}
         </p>
       </div>

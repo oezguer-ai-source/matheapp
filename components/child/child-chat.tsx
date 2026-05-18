@@ -210,7 +210,7 @@ export function ChildChat({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 via-orange-400 to-amber-400 shadow-2xl shadow-orange-200/60 flex items-center justify-center text-3xl active:scale-95 transition-all hover:scale-105 animate-float"
+        className="fixed bottom-5 right-5 z-40 w-16 h-16 rounded-full bg-child-warm shadow-2xl shadow-orange-200/60 flex items-center justify-center text-3xl active:scale-95 transition-all hover:scale-105 animate-float"
         aria-label="Chat öffnen"
       >
         <span className="drop-shadow-sm">💬</span>

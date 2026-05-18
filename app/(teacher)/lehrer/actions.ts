@@ -1,15 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSyntheticEmail, padPin } from "@/lib/supabase/pin-email";
+import { requireTeacher } from "@/lib/teacher/auth";
 import { z } from "zod";
-
-const classNameSchema = z
-  .string()
-  .min(1, { message: "Bitte geben Sie einen Klassennamen ein." })
-  .max(100, { message: "Der Klassenname darf hoechstens 100 Zeichen lang sein." });
+import {
+  createClassSchema,
+  setClassGradeSchema,
+} from "@/lib/schemas/class";
 
 export type ClassActionState = { error: string | null; success?: boolean };
 
@@ -17,20 +16,20 @@ export async function createClassAction(
   _prev: ClassActionState,
   formData: FormData
 ): Promise<ClassActionState> {
-  const parsed = classNameSchema.safeParse(formData.get("className"));
+  const parsed = createClassSchema.safeParse({
+    className: formData.get("className"),
+    grade: formData.get("grade"),
+  });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Ungueltige Eingabe." };
   }
 
-  const className = parsed.data;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { className, grade } = parsed.data;
 
-  if (!user) {
-    return { error: "Nicht angemeldet." };
-  }
+  // A3 — Rollen-Pruefung
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
   const admin = createAdminClient();
 
@@ -62,13 +61,71 @@ export async function createClassAction(
   // Create the class
   const { error: classError } = await admin
     .from("classes")
-    .insert({ name: className, school_id: schoolId, teacher_id: user.id });
+    .insert({ name: className, school_id: schoolId, teacher_id: user.id, grade });
 
   if (classError) {
     return { error: "Klasse konnte nicht erstellt werden." };
   }
 
   revalidatePath("/lehrer");
+  return { error: null, success: true };
+}
+
+// --- Klassenstufe einer bestehenden Klasse setzen/aendern ---
+//
+// Noetig fuer Bestandsklassen (grade = NULL), die vor Bug-3-Fix angelegt
+// wurden. Ohne gepflegte Stufe koennen keine neuen Schueler hinzugefuegt
+// werden (siehe addStudentAction).
+
+export async function setClassGradeAction(
+  _prev: ClassActionState,
+  formData: FormData
+): Promise<ClassActionState> {
+  const parsed = setClassGradeSchema.safeParse({
+    classId: formData.get("classId"),
+    grade: formData.get("grade"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungueltige Eingabe." };
+  }
+
+  const { classId, grade } = parsed.data;
+
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+
+  const admin = createAdminClient();
+
+  // Eigentum pruefen
+  const { data: classData } = await admin
+    .from("classes")
+    .select("id")
+    .eq("id", classId)
+    .eq("teacher_id", auth.userId)
+    .maybeSingle();
+
+  if (!classData) return { error: "Klasse nicht gefunden." };
+
+  const { error: updateError } = await admin
+    .from("classes")
+    .update({ grade })
+    .eq("id", classId);
+
+  if (updateError) {
+    return { error: "Klassenstufe konnte nicht gespeichert werden." };
+  }
+
+  // Bestehende Schueler dieser Klasse auf die neue Stufe nachziehen, damit
+  // vor dem Fix mit falschem grade_level (Default 1) angelegte Kinder
+  // korrigiert werden. Aufgaben-Zuordnung laeuft danach ueber die richtige Stufe.
+  await admin
+    .from("profiles")
+    .update({ grade_level: grade })
+    .eq("class_id", classId)
+    .eq("role", "child");
+
+  revalidatePath("/lehrer");
+  revalidatePath(`/lehrer/klasse/${classId}`);
   return { error: null, success: true };
 }
 
@@ -117,31 +174,33 @@ export async function addStudentAction(
   const [, month, day] = birthDate.split("-");
   const pin = `${day}${month}`;
 
-  // Verify the teacher owns this class
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  // A3 — Rollen-Pruefung
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
+  // Verify the teacher owns this class — und Klassenstufe gleich mitladen.
   const admin = createAdminClient();
   const { data: classData } = await admin
     .from("classes")
-    .select("id")
+    .select("id, grade")
     .eq("id", classId)
     .eq("teacher_id", user.id)
     .maybeSingle();
 
   if (!classData) return { error: "Klasse nicht gefunden." };
 
-  // Klassenstufe aus dem Klassennamen ableiten (z.B. "3a" → 3, "2B" → 2)
-  const { data: classInfo } = await admin
-    .from("classes")
-    .select("name")
-    .eq("id", classId)
-    .single();
-  const gradeMatch = classInfo?.name?.match(/^(\d)/);
-  const gradeLevel = gradeMatch ? Math.min(Math.max(parseInt(gradeMatch[1], 10), 1), 4) : 1;
+  // Bug-3-Fix: Klassenstufe wird NICHT mehr aus dem Namen geraten, sondern
+  // direkt aus classes.grade gelesen. Ist die Stufe noch nicht gepflegt
+  // (Bestandsklasse, grade = NULL), bricht das Anlegen mit klarer Meldung ab —
+  // statt still grade_level 1 zu vergeben.
+  const gradeLevel = classData.grade;
+  if (gradeLevel == null) {
+    return {
+      error:
+        "Bitte zuerst die Klassenstufe dieser Klasse pflegen, bevor Sie Schüler hinzufügen.",
+    };
+  }
 
   // Synthetische Zugangsdaten für das Kind erstellen
   let email: string;

@@ -47,7 +47,7 @@ export function ChildLoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-16 rounded-2xl bg-gradient-to-r from-orange-400 to-yellow-400 text-white text-2xl font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 hover:scale-[1.02] active:scale-[0.98] focus:ring-4 focus:ring-orange-300 focus:ring-offset-2 focus:outline-none disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
+        className="h-16 rounded-2xl bg-child-cta text-white text-2xl font-bold shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/50 hover:scale-[1.02] active:scale-[0.98] focus:ring-4 focus:ring-orange-300 focus:ring-offset-2 focus:outline-none disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
       >
         {pending ? "Anmelden…" : "Los geht's! 🎯"}
       </button>

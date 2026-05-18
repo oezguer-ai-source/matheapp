@@ -29,7 +29,7 @@ export default async function LehrerLayout({
       .maybeSingle(),
     admin
       .from("classes")
-      .select("id, name")
+      .select("id, name, grade")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: true }),
   ]);
@@ -97,12 +97,12 @@ export default async function LehrerLayout({
   }
 
   return (
-    <div className="flex min-h-dvh">
+    <div className="lg:flex min-h-dvh">
       <Sidebar
         teacherName={profile.display_name}
         classes={classes ?? []}
       />
-      <main className="flex-1 bg-slate-50 overflow-auto">
+      <main className="flex-1 min-w-0 bg-slate-50 overflow-auto">
         {children}
       </main>
     </div>

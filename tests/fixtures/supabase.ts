@@ -61,6 +61,157 @@ export async function cleanupTestData(): Promise<void> {
   await admin.from("schools").delete().eq("name", TEST_SCHOOL_NAME);
 }
 
+/**
+ * Beschreibt einen vollstaendig isolierten Fixture-Satz (Schule, Klasse,
+ * Lehrer, Kind) mit datei-spezifischen, eindeutigen Entity-Namen.
+ *
+ * Hintergrund: Vitest faehrt Integration-Test-Dateien parallel. Wenn mehrere
+ * Suiten dieselben globalen Konstanten (TEST_TEACHER.email etc.) verwenden,
+ * loeschen sich ihre `seedTestData()`-Aufrufe gegenseitig die Auth-User weg
+ * ("Database error creating new user" / "Teacher login failed"). Mit einem
+ * eindeutigen `suffix` bekommt jede Datei einen eigenen Namensraum und es
+ * gibt keine Kollision mehr.
+ */
+export type IsolatedFixture = {
+  suffix: string;
+  schoolName: string;
+  className: string;
+  teacher: { email: string; password: string; name: string };
+  child: { username: string; pin: string; grade: number };
+};
+
+/**
+ * Baut einen isolierten Fixture-Satz fuer eine bestimmte Test-Datei.
+ * `suffix` muss pro Datei eindeutig sein, z.B. "rls".
+ */
+export function makeIsolatedFixture(suffix: string): IsolatedFixture {
+  return {
+    suffix,
+    schoolName: `Testschule ${suffix}`,
+    className: `Klasse Test ${suffix}`,
+    teacher: {
+      email: `teacher.${suffix}@matheapp.test`,
+      password: "TestPass123!",
+      name: `Test Teacher ${suffix}`,
+    },
+    child: {
+      username: `kind.${suffix}`,
+      pin: "4711",
+      grade: 2,
+    },
+  };
+}
+
+/**
+ * Raeumt alle Daten eines isolierten Fixture-Satzes auf. Nur Entities mit den
+ * datei-spezifischen Namen werden geloescht — andere parallel laufende Suiten
+ * bleiben unberuehrt.
+ */
+export async function cleanupIsolatedFixture(
+  fixture: IsolatedFixture
+): Promise<void> {
+  const admin = adminClient();
+
+  const { data: allUsers } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 500,
+  });
+  if (allUsers?.users) {
+    for (const u of allUsers.users) {
+      if (
+        u.email === fixture.teacher.email ||
+        (u.email?.endsWith("@matheapp.internal") &&
+          u.email.startsWith(`${fixture.child.username}.`))
+      ) {
+        await admin.auth.admin.deleteUser(u.id);
+      }
+    }
+  }
+
+  await admin.from("classes").delete().eq("name", fixture.className);
+  await admin.from("schools").delete().eq("name", fixture.schoolName);
+}
+
+/**
+ * Seeded einen vollstaendig isolierten Fixture-Satz (Schule, Klasse, Lehrer,
+ * Kind). Anders als `seedTestData()` verwendet diese Funktion datei-spezifische
+ * Namen und kollidiert daher nicht mit parallel laufenden Suiten.
+ */
+export async function seedIsolatedFixture(
+  fixture: IsolatedFixture
+): Promise<SeedResult> {
+  const admin = adminClient();
+  await cleanupIsolatedFixture(fixture);
+
+  const { data: teacherSignup, error: teacherErr } =
+    await admin.auth.admin.createUser({
+      email: fixture.teacher.email,
+      password: fixture.teacher.password,
+      email_confirm: true,
+      app_metadata: { role: "teacher" },
+      user_metadata: { name: fixture.teacher.name },
+    });
+  if (teacherErr || !teacherSignup.user)
+    throw teacherErr ?? new Error("teacher create failed");
+  const teacherId = teacherSignup.user.id;
+
+  await admin.from("profiles").upsert({
+    user_id: teacherId,
+    role: "teacher",
+    display_name: fixture.teacher.name,
+    grade_level: null,
+    class_id: null,
+  });
+
+  const { data: school, error: schoolErr } = await admin
+    .from("schools")
+    .insert({ name: fixture.schoolName, subscription_tier: "free" })
+    .select("id")
+    .single();
+  if (schoolErr || !school) throw schoolErr;
+  const schoolId = school.id;
+
+  const { data: cls, error: classErr } = await admin
+    .from("classes")
+    .insert({
+      name: fixture.className,
+      school_id: schoolId,
+      teacher_id: teacherId,
+    })
+    .select("id")
+    .single();
+  if (classErr || !cls) throw classErr;
+  const classId = cls.id;
+
+  await admin
+    .from("profiles")
+    .update({ class_id: classId })
+    .eq("user_id", teacherId);
+
+  const childEmail = buildSyntheticEmail(fixture.child.username, classId);
+  const childPassword = padPin(fixture.child.pin, classId);
+  const { data: childSignup, error: childErr } =
+    await admin.auth.admin.createUser({
+      email: childEmail,
+      password: childPassword,
+      email_confirm: true,
+      app_metadata: { role: "child" },
+    });
+  if (childErr || !childSignup.user)
+    throw childErr ?? new Error("child create failed");
+  const childId = childSignup.user.id;
+
+  await admin.from("profiles").upsert({
+    user_id: childId,
+    role: "child",
+    display_name: fixture.child.username,
+    grade_level: fixture.child.grade,
+    class_id: classId,
+  });
+
+  return { schoolId, classId, teacherId, childId };
+}
+
 export async function seedTestData(): Promise<SeedResult> {
   const admin = adminClient();
   await cleanupTestData();

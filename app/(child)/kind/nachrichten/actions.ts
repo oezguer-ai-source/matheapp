@@ -31,11 +31,45 @@ export async function sendChildMessageAction(
 
   const admin = createAdminClient();
 
+  // Empfaenger IMMER serverseitig ueber die eigene Klasse aufloesen:
+  // profiles.class_id -> classes.teacher_id. Der vom Client gelieferte
+  // teacherId-Parameter wird NICHT direkt vertraut (es kann mehrere Lehrer
+  // mit identischem display_name geben). Der Parameter dient nur als
+  // Konsistenz-Check gegen einen veralteten Client-Stand.
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("class_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profile?.class_id) {
+    return { error: "Du bist noch keiner Klasse zugeordnet." };
+  }
+
+  const { data: classRow } = await admin
+    .from("classes")
+    .select("teacher_id")
+    .eq("id", profile.class_id)
+    .maybeSingle();
+
+  const resolvedTeacherId = classRow?.teacher_id ?? null;
+  if (!resolvedTeacherId) {
+    return { error: "Deiner Klasse ist kein Lehrer zugeordnet." };
+  }
+
+  if (teacherId && teacherId !== resolvedTeacherId) {
+    // Client-Stand ist veraltet — wir senden trotzdem an den korrekten
+    // Lehrer der eigenen Klasse.
+    console.warn(
+      "[sendChildMessageAction] teacherId-Prop weicht ab, nutze Klassen-Lehrer."
+    );
+  }
+
   const { data: inserted, error } = await admin
     .from("messages")
     .insert({
       sender_id: user.id,
-      recipient_id: teacherId,
+      recipient_id: resolvedTeacherId,
       subject: "",
       body: trimmed,
     })

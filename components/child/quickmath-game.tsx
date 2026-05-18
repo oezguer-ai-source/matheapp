@@ -163,7 +163,7 @@ export function QuickMathGame({ grade }: Props) {
         <button
           type="button"
           onClick={handleStart}
-          className="h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 text-white text-3xl font-bold px-10 active:scale-95 transition-transform shadow-lg"
+          className="h-16 rounded-2xl bg-child-warm text-white text-3xl font-bold px-10 active:scale-95 transition-transform shadow-lg"
         >
           Los geht&apos;s!
         </button>

@@ -72,7 +72,7 @@ export function DinoCompanion({
             </div>
             <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-pink-400 via-orange-400 to-yellow-400 transition-all duration-700"
+                className="h-full rounded-full bg-child-warm transition-all duration-700"
                 style={{ width: `${progress.percent}%` }}
               />
             </div>

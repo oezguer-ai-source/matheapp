@@ -54,7 +54,7 @@ export function LevelUpModal({ open, newLevel, onClose }: Props) {
           <DinoLevel level={newLevel} mood="happy" size={160} />
         </div>
 
-        <p className="text-lg font-bold bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent">
+        <p className="text-lg font-bold text-child-gradient">
           {stage.title}
         </p>
         <p className="text-sm text-slate-600 italic mt-1 mb-6">
@@ -64,7 +64,7 @@ export function LevelUpModal({ open, newLevel, onClose }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-orange-500 text-white text-lg font-extrabold active:scale-95 transition-transform shadow-lg"
+          className="w-full h-14 rounded-2xl bg-child-warm text-white text-lg font-extrabold active:scale-95 transition-transform shadow-lg"
         >
           Weiter! 🎉
         </button>

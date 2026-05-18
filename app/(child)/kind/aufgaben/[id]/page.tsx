@@ -1,7 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { AssignmentSolver } from "@/components/child/assignment-solver";
 
 const MAX_ATTEMPTS = 3;
@@ -18,10 +17,10 @@ export default async function KindAufgabeDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const admin = createAdminClient();
-
+  // RLS-gebundener Client: Die Policies auf assignments/assignment_items
+  // begrenzen die Sichtbarkeit bereits auf Aufgaben der eigenen Klasse.
   // Aufgabe laden
-  const { data: assignment } = await admin
+  const { data: assignment } = await supabase
     .from("assignments")
     .select("id, title, description, due_date")
     .eq("id", id)
@@ -30,14 +29,14 @@ export default async function KindAufgabeDetailPage({
   if (!assignment) notFound();
 
   // Items laden (ohne correct_options — die sieht der Schüler nicht)
-  const { data: items } = await admin
+  const { data: items } = await supabase
     .from("assignment_items")
     .select("id, sort_order, item_type, question, options")
     .eq("assignment_id", id)
     .order("sort_order");
 
   // Abgabe-Status laden
-  const { data: submission } = await admin
+  const { data: submission } = await supabase
     .from("assignment_submissions")
     .select("id, status, submitted_at, duration_seconds, attempts_used")
     .eq("assignment_id", id)
@@ -51,7 +50,7 @@ export default async function KindAufgabeDetailPage({
   // Bestehende Antworten + Korrektheit laden
   let existingAnswers: { item_id: string; text_answer: string | null; selected_options: number[] | null; is_correct: boolean | null }[] = [];
   if (submission) {
-    const { data: answers } = await admin
+    const { data: answers } = await supabase
       .from("submission_answers")
       .select("item_id, text_answer, selected_options, is_correct")
       .eq("submission_id", submission.id);

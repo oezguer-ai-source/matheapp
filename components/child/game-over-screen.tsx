@@ -14,7 +14,7 @@ export function GameOverScreen({ score, scoreUnit, onRestart }: GameOverScreenPr
       <h2 className="text-5xl font-extrabold text-slate-800">Geschafft!</h2>
       <div className="text-center">
         <p className="text-xl text-slate-500">Dein Ergebnis</p>
-        <p className="text-6xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+        <p className="text-6xl font-extrabold text-child-gradient">
           {score}
         </p>
         <p className="text-lg text-slate-600">{scoreUnit}</p>

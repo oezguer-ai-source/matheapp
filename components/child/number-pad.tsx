@@ -8,7 +8,12 @@ interface NumberPadProps {
 }
 
 const digitButtonBase =
-  "h-16 w-full rounded-2xl text-3xl font-semibold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed";
+  "h-16 w-full rounded-2xl text-3xl font-bold text-white shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-md";
+
+// Ziffern: kühler Kinder-Verlauf, Löschen: warm, OK: grün-türkis.
+const digitClass = `${digitButtonBase} bg-child-cool shadow-cyan-200/50`;
+const deleteClass = `${digitButtonBase} bg-child-warm shadow-orange-200/50`;
+const confirmClass = `${digitButtonBase} bg-child-go shadow-emerald-200/60`;
 
 export function NumberPad({
   onDigit,
@@ -25,7 +30,7 @@ export function NumberPad({
           type="button"
           disabled={disabled}
           onClick={() => onDigit(d)}
-          className={`${digitButtonBase} bg-blue-500 text-white`}
+          className={digitClass}
         >
           {d}
         </button>
@@ -38,7 +43,7 @@ export function NumberPad({
           type="button"
           disabled={disabled}
           onClick={() => onDigit(d)}
-          className={`${digitButtonBase} bg-blue-500 text-white`}
+          className={digitClass}
         >
           {d}
         </button>
@@ -51,7 +56,7 @@ export function NumberPad({
           type="button"
           disabled={disabled}
           onClick={() => onDigit(d)}
-          className={`${digitButtonBase} bg-blue-500 text-white`}
+          className={digitClass}
         >
           {d}
         </button>
@@ -62,7 +67,7 @@ export function NumberPad({
         type="button"
         disabled={disabled}
         onClick={onDelete}
-        className={`${digitButtonBase} bg-red-500 text-white`}
+        className={deleteClass}
         aria-label="Loeschen"
       >
         {"\u2190"}
@@ -72,7 +77,7 @@ export function NumberPad({
         type="button"
         disabled={disabled}
         onClick={() => onDigit("0")}
-        className={`${digitButtonBase} bg-blue-500 text-white`}
+        className={digitClass}
       >
         0
       </button>
@@ -81,7 +86,7 @@ export function NumberPad({
         type="button"
         disabled={disabled}
         onClick={onConfirm}
-        className={`${digitButtonBase} bg-green-500 text-white`}
+        className={confirmClass}
         aria-label="Bestaetigen"
       >
         OK

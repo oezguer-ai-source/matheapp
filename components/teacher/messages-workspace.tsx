@@ -11,15 +11,9 @@ import {
   type StudentStats,
   type StudentWithUnread,
 } from "@/app/(teacher)/lehrer/nachrichten/actions";
+import { formatName } from "@/lib/teacher/format";
 
 type ClassItem = { id: string; name: string };
-
-function formatName(username: string): string {
-  return username
-    .split(".")
-    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(" ");
-}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);

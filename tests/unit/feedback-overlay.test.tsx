@@ -8,16 +8,17 @@ describe("FeedbackOverlay", () => {
       <FeedbackOverlay correct={true} pointsEarned={10} correctAnswer={5} />
     );
 
-    expect(screen.getByText("Richtig! +10 Punkte")).toBeInTheDocument();
+    expect(screen.getByText("Richtig!")).toBeInTheDocument();
+    expect(screen.getByText("+10 Punkte")).toBeInTheDocument();
   });
 
-  it("has green background class when correct=true", () => {
+  it("has green border class when correct=true", () => {
     render(
       <FeedbackOverlay correct={true} pointsEarned={10} correctAnswer={5} />
     );
 
     const container = screen.getByTestId("feedback-overlay");
-    expect(container.className).toContain("bg-green-100");
+    expect(container.className).toContain("border-green-200");
   });
 
   it("renders incorrect feedback with correct answer when correct=false", () => {
@@ -25,17 +26,17 @@ describe("FeedbackOverlay", () => {
       <FeedbackOverlay correct={false} pointsEarned={0} correctAnswer={42} />
     );
 
-    expect(
-      screen.getByText("Leider falsch. Die Antwort ist: 42")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Leider falsch")).toBeInTheDocument();
+    expect(screen.getByText(/Die richtige Antwort ist:/)).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
   });
 
-  it("has red background class when correct=false", () => {
+  it("has red border class when correct=false", () => {
     render(
       <FeedbackOverlay correct={false} pointsEarned={0} correctAnswer={42} />
     );
 
     const container = screen.getByTestId("feedback-overlay");
-    expect(container.className).toContain("bg-red-100");
+    expect(container.className).toContain("border-red-200");
   });
 });

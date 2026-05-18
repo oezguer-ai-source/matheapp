@@ -22,7 +22,7 @@ export default function LoginClient() {
           {role === "child" ? (
             <>
               <div className="text-6xl mb-3 animate-float">🧮</div>
-              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-extrabold text-child-gradient">
                 Matheapp
               </h1>
               <p className="text-lg text-slate-600 mt-1">Mathe macht Spaß!</p>

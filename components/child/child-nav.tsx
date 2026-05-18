@@ -36,7 +36,7 @@ export function ChildNav({ displayName }: { displayName: string }) {
                 href={item.href}
                 className={`flex flex-col items-center px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? "bg-gradient-to-b from-orange-400 to-yellow-400 text-white shadow-md shadow-orange-200/50 scale-105"
+                    ? "bg-child-cta text-white shadow-md shadow-orange-200/50 scale-105"
                     : "text-slate-500 hover:bg-orange-50 hover:text-slate-700"
                 }`}
               >

@@ -80,73 +80,69 @@ describe("Auth Zod schemas", () => {
     });
   });
 
-  describe("teacherSignupSchema", () => {
+  // Nach der vereinfachten Registrierung hat teacherSignupSchema nur noch die
+  // Felder name, email und password (keine schoolName/className mehr).
+  describe("teacherSignupSchema (vereinfachte Registrierung)", () => {
     const VALID = {
       name: "Anna Müller",
       email: "anna@schule.de",
       password: "12345678",
-      schoolName: "Grundschule Musterweg",
-      className: "3a",
     };
 
-    it("accepts a fully-populated valid payload", () => {
+    it("accepts a valid payload with only name, email and password", () => {
       expect(teacherSignupSchema.safeParse(VALID).success).toBe(true);
     });
 
     it("requires non-empty name", () => {
+      const r = teacherSignupSchema.safeParse({ ...VALID, name: "" });
+      expect(r.success).toBe(false);
+      if (!r.success) {
+        expect(
+          r.error.issues.some((i) => i.message.includes("Namen"))
+        ).toBe(true);
+      }
+    });
+
+    it("rejects name longer than 100 chars", () => {
       expect(
-        teacherSignupSchema.safeParse({ ...VALID, name: "" }).success
+        teacherSignupSchema.safeParse({ ...VALID, name: "x".repeat(101) })
+          .success
       ).toBe(false);
     });
 
     it("requires valid email", () => {
-      expect(
-        teacherSignupSchema.safeParse({ ...VALID, email: "nope" }).success
-      ).toBe(false);
+      const r = teacherSignupSchema.safeParse({ ...VALID, email: "nope" });
+      expect(r.success).toBe(false);
+      if (!r.success) {
+        expect(
+          r.error.issues.some((i) => i.message.includes("gültige E-Mail"))
+        ).toBe(true);
+      }
     });
 
     it("requires password >= 8 chars", () => {
-      expect(
-        teacherSignupSchema.safeParse({ ...VALID, password: "short" }).success
-      ).toBe(false);
-    });
-
-    it("requires schoolName >= 2 chars (D-13a)", () => {
-      const r = teacherSignupSchema.safeParse({ ...VALID, schoolName: "A" });
+      const r = teacherSignupSchema.safeParse({ ...VALID, password: "short" });
       expect(r.success).toBe(false);
       if (!r.success) {
         expect(
-          r.error.issues.some((i) => i.message.includes("Schule"))
+          r.error.issues.some((i) => i.message.includes("8 Zeichen"))
         ).toBe(true);
       }
     });
 
-    it("requires className >= 2 chars (D-13a)", () => {
-      const r = teacherSignupSchema.safeParse({ ...VALID, className: "A" });
-      expect(r.success).toBe(false);
-      if (!r.success) {
-        expect(
-          r.error.issues.some((i) => i.message.includes("Klasse"))
-        ).toBe(true);
+    it("ignores unknown legacy fields like schoolName/className", () => {
+      // z.object() entfernt unbekannte Keys standardmaessig (strip),
+      // daher bleibt das Payload trotz Alt-Felder gueltig.
+      const r = teacherSignupSchema.safeParse({
+        ...VALID,
+        schoolName: "Grundschule Musterweg",
+        className: "3a",
+      });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data).not.toHaveProperty("schoolName");
+        expect(r.data).not.toHaveProperty("className");
       }
-    });
-
-    it("rejects schoolName longer than 100 chars", () => {
-      expect(
-        teacherSignupSchema.safeParse({
-          ...VALID,
-          schoolName: "x".repeat(101),
-        }).success
-      ).toBe(false);
-    });
-
-    it("rejects className longer than 100 chars", () => {
-      expect(
-        teacherSignupSchema.safeParse({
-          ...VALID,
-          className: "x".repeat(101),
-        }).success
-      ).toBe(false);
     });
   });
 });

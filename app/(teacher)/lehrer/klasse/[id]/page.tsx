@@ -2,13 +2,11 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AddStudentForm } from "@/components/teacher/add-student-form";
-
-function formatName(username: string): string {
-  return username
-    .split(".")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+import { formatName } from "@/lib/teacher/format";
+import {
+  aggregateProgressByChild,
+  type ProgressStats,
+} from "@/lib/teacher/progress";
 
 export default async function KlasseDetailPage({
   params,
@@ -44,7 +42,7 @@ export default async function KlasseDetailPage({
   const studentIds = (students ?? []).map((s) => s.user_id);
   const admin = createAdminClient();
 
-  const progressMap = new Map<string, { points: number; total: number; correct: number; lastAt: string | null }>();
+  let progressMap = new Map<string, ProgressStats>();
   if (studentIds.length > 0) {
     const { data: entries } = await admin
       .from("progress_entries")
@@ -52,16 +50,7 @@ export default async function KlasseDetailPage({
       .in("child_id", studentIds)
       .neq("operation_type", "minigame_redeem");
 
-    for (const entry of entries ?? []) {
-      const existing = progressMap.get(entry.child_id) ?? { points: 0, total: 0, correct: 0, lastAt: null };
-      existing.points += entry.points_earned ?? 0;
-      existing.total += 1;
-      if (entry.correct) existing.correct += 1;
-      if (entry.created_at && (!existing.lastAt || entry.created_at > existing.lastAt)) {
-        existing.lastAt = entry.created_at;
-      }
-      progressMap.set(entry.child_id, existing);
-    }
+    progressMap = aggregateProgressByChild(entries);
   }
 
   // Streak-State pro Schüler laden
@@ -124,7 +113,7 @@ export default async function KlasseDetailPage({
   });
 
   return (
-    <div className="p-8 lg:p-12 max-w-5xl">
+    <div className="p-5 sm:p-8 lg:p-12 max-w-5xl">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -166,7 +155,8 @@ export default async function KlasseDetailPage({
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80">
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
@@ -268,6 +258,7 @@ export default async function KlasseDetailPage({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

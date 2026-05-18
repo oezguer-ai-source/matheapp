@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireTeacher } from "@/lib/teacher/auth";
+import { aggregateProgress, computeAccuracy } from "@/lib/teacher/progress";
 
 // --- Chat-Actions ---
 
@@ -26,22 +27,20 @@ export type StudentWithUnread = {
 export async function fetchClassStudentsWithUnreadAction(
   classId: string
 ): Promise<{ error: string | null; students?: StudentWithUnread[] }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
+
+  const admin = createAdminClient();
 
   // Klasse gehört dem Lehrer?
-  const { data: cls } = await supabase
+  const { data: cls } = await admin
     .from("classes")
     .select("id")
     .eq("id", classId)
     .eq("teacher_id", user.id)
     .maybeSingle();
   if (!cls) return { error: "Klasse nicht gefunden." };
-
-  const admin = createAdminClient();
 
   const { data: students } = await admin
     .from("profiles")
@@ -126,11 +125,9 @@ export async function fetchClassStudentsWithUnreadAction(
 export async function fetchConversationAction(
   studentId: string
 ): Promise<{ error: string | null; messages?: ChatMessage[] }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
   const admin = createAdminClient();
 
@@ -160,16 +157,37 @@ export async function sendChatMessageAction(
   studentId: string,
   body: string
 ): Promise<{ error: string | null; message?: ChatMessage }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
   const trimmed = body.trim();
   if (!trimmed) return { error: "Leere Nachricht." };
 
   const admin = createAdminClient();
+
+  // Empfaenger muss ein Schueler einer Klasse des Lehrers sein.
+  const { data: recipient } = await admin
+    .from("profiles")
+    .select("class_id")
+    .eq("user_id", studentId)
+    .eq("role", "child")
+    .maybeSingle();
+
+  if (!recipient?.class_id) {
+    return { error: "Empfaenger nicht gefunden." };
+  }
+
+  const { data: ownsClass } = await admin
+    .from("classes")
+    .select("id")
+    .eq("id", recipient.class_id)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
+  if (!ownsClass) {
+    return { error: "Kein Zugriff auf diesen Schueler." };
+  }
 
   const { data: inserted, error } = await admin
     .from("messages")
@@ -202,11 +220,9 @@ export async function sendChatMessageAction(
 export async function markConversationReadAction(
   studentId: string
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
   const admin = createAdminClient();
 
@@ -253,11 +269,9 @@ export type StudentStats = {
 export async function fetchStudentStatsAction(
   studentId: string
 ): Promise<{ error: string | null; stats?: StudentStats }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Nicht angemeldet." };
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+  const user = { id: auth.userId };
 
   const admin = createAdminClient();
 
@@ -286,16 +300,7 @@ export async function fetchStudentStatsAction(
     .eq("child_id", studentId)
     .neq("operation_type", "minigame_redeem");
 
-  let points = 0;
-  let total = 0;
-  let correct = 0;
-  let lastAt: string | null = null;
-  for (const e of entries ?? []) {
-    points += e.points_earned ?? 0;
-    total += 1;
-    if (e.correct) correct += 1;
-    if (e.created_at && (!lastAt || e.created_at > lastAt)) lastAt = e.created_at;
-  }
+  const { points, total, correct, lastAt } = aggregateProgress(entries);
 
   // Zugewiesene Aufgaben
   let openAssignments = 0;
@@ -330,7 +335,7 @@ export async function fetchStudentStatsAction(
       points,
       totalExercises: total,
       correctExercises: correct,
-      accuracy: total > 0 ? Math.round((correct / total) * 100) : null,
+      accuracy: total > 0 ? computeAccuracy(correct, total) : null,
       lastActivity: lastAt,
       openAssignments,
       submittedAssignments,
