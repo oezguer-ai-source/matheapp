@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSyntheticEmail, padPin } from "@/lib/supabase/pin-email";
 import { requireTeacher } from "@/lib/teacher/auth";
+import { verifyStudentDeletion } from "@/lib/teacher/student-deletion";
 import { z } from "zod";
 import {
   createClassSchema,
@@ -246,6 +247,65 @@ export async function addStudentAction(
       return { error: "Ein Schüler mit diesem Namen existiert bereits in dieser Klasse." };
     }
     return { error: "Profil konnte nicht erstellt werden." };
+  }
+
+  revalidatePath(`/lehrer/klasse/${classId}`);
+  return { error: null, success: true };
+}
+
+// --- Schüler entfernen ---
+
+const deleteStudentSchema = z.object({
+  studentUserId: z.string().uuid(),
+  classId: z.string().uuid(),
+});
+
+export async function deleteStudentAction(
+  _prev: StudentActionState,
+  formData: FormData
+): Promise<StudentActionState> {
+  const parsed = deleteStudentSchema.safeParse({
+    studentUserId: formData.get("studentUserId"),
+    classId: formData.get("classId"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
+  }
+
+  const { studentUserId, classId } = parsed.data;
+
+  // A3 — Rollen-Pruefung
+  const auth = await requireTeacher();
+  if (!auth.ok) return { error: auth.error };
+
+  const admin = createAdminClient();
+
+  // Eigentum der Klasse + Schueler-Zugehoerigkeit laden
+  const [{ data: teacherClass }, { data: studentProfile }] = await Promise.all([
+    admin.from("classes").select("teacher_id").eq("id", classId).maybeSingle(),
+    admin
+      .from("profiles")
+      .select("role, class_id")
+      .eq("user_id", studentUserId)
+      .maybeSingle(),
+  ]);
+
+  const check = verifyStudentDeletion({
+    teacherClass,
+    studentProfile,
+    teacherId: auth.userId,
+    classId,
+  });
+  if (!check.ok) return { error: check.error };
+
+  // Auth-User loeschen — Cascade (on delete cascade) raeumt progress_entries,
+  // game_scores, avatar_state, streak_state, profiles, assignment_submissions,
+  // submission_answers, messages und message_reads automatisch mit weg.
+  const { error: deleteError } = await admin.auth.admin.deleteUser(
+    studentUserId
+  );
+  if (deleteError) {
+    return { error: "Schüler konnte nicht entfernt werden." };
   }
 
   revalidatePath(`/lehrer/klasse/${classId}`);

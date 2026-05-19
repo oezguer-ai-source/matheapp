@@ -4,14 +4,17 @@ import { z } from "zod";
 // Aufgaben-Erstellung (assignments + assignment_items)
 // ============================================================
 
-// Ein einzelnes Aufgaben-Item: Freitext ('text') oder Multiple-Choice ('choice').
-// Der refine() stellt die Choice-Konsistenz sicher:
-//   - 'text'   -> options/correct_options muessen leer sein
+// Ein einzelnes Aufgaben-Item: Freitext ('text'), Multiple-Choice ('choice')
+// oder generierte Mathe-Aufgabe ('math').
+// Der superRefine() stellt die Typ-Konsistenz sicher:
+//   - 'text'   -> options/correct_options/correct_number muessen leer sein
 //   - 'choice' -> mindestens 2 Optionen, correct_options nicht leer und alle
-//                 Indizes liegen innerhalb des Options-Arrays.
+//                 Indizes liegen innerhalb des Options-Arrays;
+//                 correct_number darf nicht gesetzt sein
+//   - 'math'   -> correct_number Pflicht; options/correct_options muessen leer sein
 export const assignmentItemSchema = z
   .object({
-    itemType: z.enum(["text", "choice"]),
+    itemType: z.enum(["text", "choice", "math"]),
     question: z
       .string()
       .min(1, { message: "Die Frage darf nicht leer sein." })
@@ -24,27 +27,64 @@ export const assignmentItemSchema = z
       .optional(),
     // Bei 'choice': Indizes der korrekten Optionen.
     correctOptions: z.array(z.number().int().min(0)).optional(),
+    // Bei 'math': die eindeutige korrekte Zahl der generierten Aufgabe.
+    correctNumber: z
+      .number({ message: "Die korrekte Zahl muss eine Zahl sein." })
+      .finite({ message: "Die korrekte Zahl muss endlich sein." })
+      .optional(),
   })
   .superRefine((item, ctx) => {
-    if (item.itemType === "text") {
+    if (item.itemType === "text" || item.itemType === "math") {
       if (item.options && item.options.length > 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Freitext-Aufgaben duerfen keine Antwortoptionen haben.",
+          message:
+            item.itemType === "math"
+              ? "Mathe-Aufgaben duerfen keine Antwortoptionen haben."
+              : "Freitext-Aufgaben duerfen keine Antwortoptionen haben.",
           path: ["options"],
         });
       }
       if (item.correctOptions && item.correctOptions.length > 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Freitext-Aufgaben duerfen keine korrekten Optionen haben.",
+          message:
+            item.itemType === "math"
+              ? "Mathe-Aufgaben duerfen keine korrekten Optionen haben."
+              : "Freitext-Aufgaben duerfen keine korrekten Optionen haben.",
           path: ["correctOptions"],
         });
+      }
+      if (item.itemType === "math") {
+        // 'math': correctNumber ist Pflicht.
+        if (item.correctNumber == null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Mathe-Aufgaben brauchen eine korrekte Zahl.",
+            path: ["correctNumber"],
+          });
+        }
+      } else {
+        // 'text': correctNumber darf nicht gesetzt sein.
+        if (item.correctNumber != null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Freitext-Aufgaben duerfen keine korrekte Zahl haben.",
+            path: ["correctNumber"],
+          });
+        }
       }
       return;
     }
 
     // itemType === 'choice'
+    if (item.correctNumber != null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Multiple-Choice-Aufgaben duerfen keine korrekte Zahl haben.",
+        path: ["correctNumber"],
+      });
+    }
     const options = item.options ?? [];
     const correct = item.correctOptions ?? [];
 
@@ -142,7 +182,42 @@ export const submitAnswersSchema = z.object({
     .min(1, { message: "Es muss mindestens eine Antwort abgegeben werden." }),
 });
 
+// ============================================================
+// Lehrer-Korrektur (submission_answers + assignment_submissions)
+// ============================================================
+
+// Bewertung einer einzelnen Schueler-Antwort durch den Lehrer.
+const gradeAnswerSchema = z.object({
+  // ID des bestehenden submission_answers-Datensatzes.
+  answerId: z.string().uuid(),
+  // true = richtig, false = falsch, null = (noch) unbewertet.
+  isCorrect: z.boolean().nullable(),
+  teacherComment: z
+    .string()
+    .max(2000, { message: "Der Kommentar darf hoechstens 2000 Zeichen lang sein." })
+    .nullable()
+    .optional()
+    .default(null),
+});
+
+// Komplette Korrektur einer Abgabe: alle Antwort-Bewertungen plus
+// ein optionales Gesamt-Feedback.
+export const gradeSubmissionSchema = z.object({
+  submissionId: z.string().uuid(),
+  teacherFeedback: z
+    .string()
+    .max(2000, { message: "Das Feedback darf hoechstens 2000 Zeichen lang sein." })
+    .nullable()
+    .optional()
+    .default(null),
+  answers: z
+    .array(gradeAnswerSchema)
+    .min(1, { message: "Es muss mindestens eine Antwort bewertet werden." }),
+});
+
 export type AssignmentItemInput = z.infer<typeof assignmentItemSchema>;
 export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
 export type SubmissionAnswerInput = z.infer<typeof submissionAnswerSchema>;
 export type SubmitAnswersInput = z.infer<typeof submitAnswersSchema>;
+export type GradeAnswerInput = z.infer<typeof gradeAnswerSchema>;
+export type GradeSubmissionInput = z.infer<typeof gradeSubmissionSchema>;

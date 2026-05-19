@@ -7,15 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAssignmentAction } from "@/app/(teacher)/lehrer/aufgaben/actions";
+import { RandomExercisePanel } from "@/components/teacher/random-exercise-panel";
+import type { MathAssignmentItem } from "@/lib/exercises/assignment-items";
 
-type ItemType = "text" | "choice";
+type ItemType = "text" | "choice" | "math";
 
 interface AssignmentItem {
   id: string;
   type: ItemType;
   question: string;
-  options: string[];       // nur bei choice
-  correctOptions: number[]; // nur bei choice
+  options: string[];          // nur bei choice
+  correctOptions: number[];   // nur bei choice
+  correctNumber: number | null; // nur bei math
 }
 
 export function AssignmentBuilder({
@@ -41,7 +44,26 @@ export function AssignmentBuilder({
         question: "",
         options: type === "choice" ? ["", ""] : [],
         correctOptions: [],
+        correctNumber: null,
       },
+    ]);
+  }
+
+  /**
+   * Uebernimmt die im RandomExercisePanel generierten Mathe-Aufgaben und
+   * haengt sie als 'math'-Items an die Liste an.
+   */
+  function addGeneratedItems(generated: MathAssignmentItem[]) {
+    setItems((prev) => [
+      ...prev,
+      ...generated.map((g) => ({
+        id: crypto.randomUUID(),
+        type: "math" as const,
+        question: g.question,
+        options: [],
+        correctOptions: [],
+        correctNumber: g.correctNumber,
+      })),
     ]);
   }
 
@@ -125,6 +147,10 @@ export function AssignmentBuilder({
         setError("Multiple-Choice-Aufgaben brauchen mindestens 2 Optionen.");
         return;
       }
+      if (item.type === "math" && item.correctNumber == null) {
+        setError("Allen Mathe-Aufgaben fehlt eine korrekte Zahl.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -144,6 +170,10 @@ export function AssignmentBuilder({
           question: i.question.trim(),
           options: i.type === "choice" ? i.options.filter((o) => o.trim()) : undefined,
           correctOptions: i.type === "choice" ? i.correctOptions : undefined,
+          correctNumber:
+            i.type === "math" && i.correctNumber != null
+              ? i.correctNumber
+              : undefined,
         })),
       });
 
@@ -205,7 +235,12 @@ export function AssignmentBuilder({
             <CardContent className="pt-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-slate-500">
-                  {idx + 1}. {item.type === "text" ? "Freitext" : "Multiple Choice"}
+                  {idx + 1}.{" "}
+                  {item.type === "text"
+                    ? "Freitext"
+                    : item.type === "choice"
+                      ? "Multiple Choice"
+                      : "Mathe-Aufgabe"}
                 </span>
                 <button
                   type="button"
@@ -216,6 +251,20 @@ export function AssignmentBuilder({
                 </button>
               </div>
 
+              {item.type === "math" ? (
+                /* Generierte Mathe-Aufgabe: nur Anzeige, nicht editierbar. */
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded-md bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-900">
+                    {item.question}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Korrekte Zahl:{" "}
+                    <span className="font-semibold text-slate-700">
+                      {item.correctNumber}
+                    </span>
+                  </span>
+                </div>
+              ) : (
               <div className="grid gap-3">
                 <div className="grid gap-1.5">
                   <Label>Fragestellung</Label>
@@ -261,17 +310,23 @@ export function AssignmentBuilder({
                   </div>
                 )}
               </div>
+              )}
             </CardContent>
           </Card>
         ))}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => addItem("text")}>
             + Freitext-Aufgabe
           </Button>
           <Button variant="outline" onClick={() => addItem("choice")}>
             + Multiple Choice
           </Button>
+        </div>
+
+        {/* Zufalls-Mathe-Aufgaben generieren */}
+        <div className="mt-4">
+          <RandomExercisePanel onGenerate={addGeneratedItems} />
         </div>
       </div>
 

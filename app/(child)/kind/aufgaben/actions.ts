@@ -101,14 +101,18 @@ export async function submitAssignmentAction(
   // Korrekte Antworten für alle Items laden
   const { data: items } = await admin
     .from("assignment_items")
-    .select("id, item_type, correct_options")
+    .select("id, item_type, correct_options, correct_number")
     .eq("assignment_id", assignmentId);
 
-  const correctMap = new Map<string, { type: string; correctOptions: number[] | null }>();
+  const correctMap = new Map<
+    string,
+    { type: string; correctOptions: number[] | null; correctNumber: number | null }
+  >();
   for (const item of items ?? []) {
     correctMap.set(item.id, {
       type: item.item_type,
       correctOptions: item.correct_options as number[] | null,
+      correctNumber: (item as { correct_number: number | null }).correct_number,
     });
   }
 
@@ -127,6 +131,14 @@ export async function submitAssignmentAction(
         const correct = [...itemInfo.correctOptions].sort();
         isCorrect = selected.length === correct.length &&
           selected.every((v, i) => v === correct[i]);
+      } else if (itemInfo.type === "math" && itemInfo.correctNumber != null) {
+        // Mathe-Aufgabe: Schüler-Antwort kommt als Zahl im textAnswer-Feld.
+        // Vergleich gegen die generierte correct_number.
+        const given =
+          ans.textAnswer != null && ans.textAnswer.trim() !== ""
+            ? Number(ans.textAnswer.trim().replace(",", "."))
+            : NaN;
+        isCorrect = Number.isFinite(given) && given === itemInfo.correctNumber;
       } else if (itemInfo.type === "text") {
         // Freitext: Lehrer bewertet manuell → null (nicht automatisch bewertbar)
         isCorrect = null;
@@ -180,10 +192,12 @@ export async function submitAssignmentAction(
   }
 
   // Antworten speichern. H4: is_correct wird hier bewusst NICHT gesetzt
-  // (Insert = NULL) — die Bewertung der Multiple-Choice-Items erfolgt
-  // ueber die Lehrer-/Service-Role-Seite. Das Kind sieht das Ergebnis
-  // weiterhin in `results`, aber persistiert wird die Korrektheit nicht
-  // ueber das Kind-Konto.
+  // (Insert = NULL) — die Bewertung der 'choice'- UND 'math'-Items erfolgt
+  // ueber die Lehrer-/Service-Role-Seite (Paket C). Das Kind sieht das
+  // Ergebnis weiterhin sofort in `results` (Auto-Bewertung nur fuer die
+  // Anzeige), aber persistiert wird die Korrektheit nicht ueber das
+  // Kind-Konto. Der Lehrer-Grader setzt is_correct final und kann die
+  // Auto-Bewertung dabei uebersteuern.
   const answerRows = validAnswers.map((a) => ({
     submission_id: submissionId,
     item_id: a.itemId,

@@ -50,6 +50,7 @@ export type Database = {
       assignment_items: {
         Row: {
           assignment_id: string
+          correct_number: number | null
           correct_options: Json | null
           created_at: string
           id: string
@@ -60,6 +61,7 @@ export type Database = {
         }
         Insert: {
           assignment_id: string
+          correct_number?: number | null
           correct_options?: Json | null
           created_at?: string
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           assignment_id?: string
+          correct_number?: number | null
           correct_options?: Json | null
           created_at?: string
           id?: string
@@ -94,33 +97,39 @@ export type Database = {
           attempts_used: number
           created_at: string
           duration_seconds: number | null
+          graded_at: string | null
           id: string
           started_at: string
           status: string
           student_id: string
           submitted_at: string | null
+          teacher_feedback: string | null
         }
         Insert: {
           assignment_id: string
           attempts_used?: number
           created_at?: string
           duration_seconds?: number | null
+          graded_at?: string | null
           id?: string
           started_at?: string
           status?: string
           student_id: string
           submitted_at?: string | null
+          teacher_feedback?: string | null
         }
         Update: {
           assignment_id?: string
           attempts_used?: number
           created_at?: string
           duration_seconds?: number | null
+          graded_at?: string | null
           id?: string
           started_at?: string
           status?: string
           student_id?: string
           submitted_at?: string | null
+          teacher_feedback?: string | null
         }
         Relationships: [
           {
@@ -438,6 +447,7 @@ export type Database = {
           item_id: string
           selected_options: Json | null
           submission_id: string
+          teacher_comment: string | null
           text_answer: string | null
         }
         Insert: {
@@ -447,6 +457,7 @@ export type Database = {
           item_id: string
           selected_options?: Json | null
           submission_id: string
+          teacher_comment?: string | null
           text_answer?: string | null
         }
         Update: {
@@ -456,6 +467,7 @@ export type Database = {
           item_id?: string
           selected_options?: Json | null
           submission_id?: string
+          teacher_comment?: string | null
           text_answer?: string | null
         }
         Relationships: [

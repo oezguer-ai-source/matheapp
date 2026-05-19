@@ -3,13 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatName } from "@/lib/teacher/format";
-
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "--";
-  const min = Math.floor(seconds / 60);
-  const sec = seconds % 60;
-  return min > 0 ? `${min} Min ${sec} Sek` : `${sec} Sek`;
-}
+import {
+  SubmissionGrader,
+  type GraderItem,
+} from "@/components/teacher/submission-grader";
 
 export default async function AufgabeDetailPage({
   params,
@@ -24,7 +21,7 @@ export default async function AufgabeDetailPage({
 
   if (!user) notFound();
 
-  // Aufgabe laden
+  // Aufgabe laden (Ownership ueber teacher_id)
   const admin = createAdminClient();
   const { data: assignment } = await admin
     .from("assignments")
@@ -38,9 +35,12 @@ export default async function AufgabeDetailPage({
   // Items laden
   const { data: items } = await admin
     .from("assignment_items")
-    .select("id, sort_order, item_type, question, options, correct_options")
+    .select(
+      "id, sort_order, item_type, question, options, correct_options, correct_number"
+    )
     .eq("assignment_id", id)
     .order("sort_order");
+  const itemList = items ?? [];
 
   // Zugewiesene Klassen laden
   const { data: assignedClasses } = await admin
@@ -50,50 +50,62 @@ export default async function AufgabeDetailPage({
 
   // Alle Schüler der zugewiesenen Klassen laden
   const classIds = assignedClasses?.map((ac) => ac.class_id) ?? [];
-  let allStudents: { user_id: string; display_name: string; class_id: string | null }[] = [];
+  let allStudents: { user_id: string; display_name: string }[] = [];
   if (classIds.length > 0) {
     const { data: students } = await admin
       .from("profiles")
-      .select("user_id, display_name, class_id")
+      .select("user_id, display_name")
       .eq("role", "child")
       .in("class_id", classIds)
       .order("display_name");
     allStudents = students ?? [];
   }
 
-  // Abgaben laden
+  // Abgaben laden — inkl. Korrektur-Felder
   const { data: submissions } = await admin
     .from("assignment_submissions")
-    .select("id, student_id, status, started_at, submitted_at, duration_seconds")
+    .select(
+      "id, student_id, status, submitted_at, teacher_feedback, graded_at"
+    )
     .eq("assignment_id", id);
 
   const submissionByStudent = new Map(
     (submissions ?? []).map((s) => [s.student_id, s])
   );
 
-  // Antworten aller Abgaben in einer Query laden (kein N+1)
+  // Antworten aller Abgaben in einer Query laden (kein N+1) — inkl.
+  // answer-id, is_correct und teacher_comment fuer die Korrektur.
   const submissionIds = (submissions ?? []).map((s) => s.id);
-  let answers: {
+  type AnswerRow = {
+    id: string;
     submission_id: string;
     item_id: string;
     selected_options: number[] | null;
     text_answer: string | null;
-  }[] = [];
+    is_correct: boolean | null;
+    teacher_comment: string | null;
+  };
+  let answers: AnswerRow[] = [];
   if (submissionIds.length > 0) {
     const { data } = await admin
       .from("submission_answers")
-      .select("submission_id, item_id, selected_options, text_answer")
+      .select(
+        "id, submission_id, item_id, selected_options, text_answer, is_correct, teacher_comment"
+      )
       .in("submission_id", submissionIds);
     answers = (data ?? []).map((a) => ({
+      id: a.id,
       submission_id: a.submission_id,
       item_id: a.item_id,
       selected_options: a.selected_options as number[] | null,
       text_answer: a.text_answer,
+      is_correct: a.is_correct,
+      teacher_comment: a.teacher_comment,
     }));
   }
 
-  // Antworten nach submission_id gruppieren -> Map<itemId, answer>
-  const answersBySubmission = new Map<string, Map<string, (typeof answers)[number]>>();
+  // Antworten nach submission_id -> Map<itemId, answer>
+  const answersBySubmission = new Map<string, Map<string, AnswerRow>>();
   for (const ans of answers) {
     let inner = answersBySubmission.get(ans.submission_id);
     if (!inner) {
@@ -103,28 +115,23 @@ export default async function AufgabeDetailPage({
     inner.set(ans.item_id, ans);
   }
 
-  // Items als Map fuer schnellen Zugriff bei der Auswertung
-  const itemList = items ?? [];
-  const choiceItemCount = itemList.filter((it) => it.item_type === "choice").length;
-
-  /**
-   * Bewertet eine MC-Antwort live: selected_options muss exakt der Menge
-   * correct_options entsprechen. Keine Persistenz noetig - der Lehrer-View
-   * ist read-only, eine berechnete Anzeige ist robuster und vermeidet
-   * Admin-Schreibzugriffe bei jedem Seitenaufruf.
-   */
-  function isChoiceCorrect(
-    correct: number[] | null | undefined,
-    selected: number[] | null | undefined
-  ): boolean {
-    const c = [...(correct ?? [])].sort((a, b) => a - b);
-    const s = [...(selected ?? [])].sort((a, b) => a - b);
-    if (c.length !== s.length || c.length === 0) return false;
-    return c.every((v, i) => v === s[i]);
-  }
-
   const dueDate = new Date(assignment.due_date);
   const isOverdue = dueDate < new Date();
+
+  // Schüler nach Abgabe-Status sortieren: abgegebene zuerst.
+  const submittedStudents = allStudents.filter((s) => {
+    const sub = submissionByStudent.get(s.user_id);
+    return sub?.status === "submitted";
+  });
+  const otherStudents = allStudents.filter((s) => {
+    const sub = submissionByStudent.get(s.user_id);
+    return sub?.status !== "submitted";
+  });
+
+  const correctedCount = submittedStudents.filter((s) => {
+    const sub = submissionByStudent.get(s.user_id);
+    return sub?.graded_at != null;
+  }).length;
 
   return (
     <div className="p-8 max-w-4xl">
@@ -134,7 +141,9 @@ export default async function AufgabeDetailPage({
           {assignment.title}
         </h1>
         {assignment.description && (
-          <p className="text-base text-slate-600 mt-1">{assignment.description}</p>
+          <p className="text-base text-slate-600 mt-1">
+            {assignment.description}
+          </p>
         )}
         <div className="flex items-center gap-4 mt-3">
           <span
@@ -155,19 +164,36 @@ export default async function AufgabeDetailPage({
         </div>
       </div>
 
-      {/* Aufgaben-Items */}
+      {/* Aufgaben-Items (Übersicht) */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-slate-900 mb-3">
-          Aufgaben ({items?.length ?? 0})
+          Aufgaben ({itemList.length})
         </h2>
         <div className="grid gap-2">
-          {items?.map((item, idx) => (
+          {itemList.map((item, idx) => (
             <Card key={item.id}>
               <CardContent className="pt-4 pb-4">
                 <p className="text-sm text-slate-500 mb-1">
-                  {idx + 1}. {item.item_type === "text" ? "Freitext" : "Multiple Choice"}
+                  {idx + 1}.{" "}
+                  {item.item_type === "text"
+                    ? "Freitext"
+                    : item.item_type === "choice"
+                      ? "Multiple Choice"
+                      : item.item_type === "math"
+                        ? "Mathe-Aufgabe"
+                        : "Aufgabe"}
                 </p>
-                <p className="text-sm font-medium text-slate-900">{item.question}</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {item.question}
+                </p>
+                {item.item_type === "math" && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Korrekte Zahl:{" "}
+                    <span className="font-semibold text-green-700">
+                      {item.correct_number ?? "—"}
+                    </span>
+                  </p>
+                )}
                 {item.item_type === "choice" && item.options && (
                   <ul className="mt-2 space-y-1">
                     {(item.options as string[]).map((opt, optIdx) => (
@@ -180,7 +206,9 @@ export default async function AufgabeDetailPage({
                         }`}
                       >
                         {opt}
-                        {(item.correct_options as number[])?.includes(optIdx) && " ✓"}
+                        {(item.correct_options as number[])?.includes(
+                          optIdx
+                        ) && " ✓"}
                       </li>
                     ))}
                   </ul>
@@ -191,74 +219,92 @@ export default async function AufgabeDetailPage({
         </div>
       </div>
 
-      {/* Schüler-Fortschritt */}
+      {/* Abgaben-Korrektur */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 mb-3">
-          Schüler-Fortschritt ({allStudents.length} Schüler)
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Abgaben korrigieren
+          </h2>
+          {submittedStudents.length > 0 && (
+            <span className="text-sm text-slate-500">
+              {correctedCount}/{submittedStudents.length} korrigiert
+            </span>
+          )}
+        </div>
 
-        {allStudents.length === 0 ? (
+        {submittedStudents.length === 0 ? (
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 pb-6">
               <p className="text-sm text-slate-500">
-                Keine Schüler in den zugewiesenen Klassen.
+                {allStudents.length === 0
+                  ? "Keine Schüler in den zugewiesenen Klassen."
+                  : "Noch keine Abgaben vorhanden."}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {allStudents.map((student) => {
+            {submittedStudents.map((student) => {
+              const sub = submissionByStudent.get(student.user_id);
+              if (!sub) return null;
+              const itemAnswers =
+                answersBySubmission.get(sub.id) ?? new Map<string, AnswerRow>();
+
+              const graderItems: GraderItem[] = itemList.map((item) => {
+                const ans = itemAnswers.get(item.id);
+                return {
+                  itemId: item.id,
+                  answerId: ans?.id ?? null,
+                  itemType: item.item_type,
+                  question: item.question,
+                  options: (item.options as string[] | null) ?? null,
+                  correctOptions:
+                    (item.correct_options as number[] | null) ?? null,
+                  correctNumber:
+                    (item.correct_number as number | null) ?? null,
+                  selectedOptions: ans?.selected_options ?? null,
+                  textAnswer: ans?.text_answer ?? null,
+                  isCorrect: ans?.is_correct ?? null,
+                  teacherComment: ans?.teacher_comment ?? null,
+                };
+              });
+
+              return (
+                <SubmissionGrader
+                  key={student.user_id}
+                  submissionId={sub.id}
+                  studentName={formatName(student.display_name)}
+                  gradedAt={sub.graded_at}
+                  teacherFeedback={sub.teacher_feedback}
+                  items={graderItems}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Schüler ohne Abgabe */}
+      {otherStudents.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">
+            Noch keine Abgabe ({otherStudents.length})
+          </h2>
+          <div className="space-y-2">
+            {otherStudents.map((student) => {
               const sub = submissionByStudent.get(student.user_id);
               const statusLabel = !sub
                 ? "Nicht begonnen"
-                : sub.status === "submitted"
-                  ? "Abgegeben"
-                  : "In Bearbeitung";
+                : "In Bearbeitung";
               const statusColor = !sub
                 ? "bg-slate-100 text-slate-500"
-                : sub.status === "submitted"
-                  ? "bg-green-50 text-green-600"
-                  : "bg-amber-50 text-amber-600";
-
-              const studentName = formatName(student.display_name);
-
-              const itemAnswers = sub
-                ? answersBySubmission.get(sub.id) ?? new Map()
-                : new Map();
-
-              // MC-Quote berechnen
-              let choiceCorrect = 0;
-              for (const item of itemList) {
-                if (item.item_type !== "choice") continue;
-                const ans = itemAnswers.get(item.id);
-                if (
-                  ans &&
-                  isChoiceCorrect(
-                    item.correct_options as number[] | null,
-                    ans.selected_options
-                  )
-                ) {
-                  choiceCorrect += 1;
-                }
-              }
-
-              const hasAnswers = itemAnswers.size > 0;
-
+                : "bg-amber-50 text-amber-600";
               return (
                 <Card key={student.user_id}>
-                  <CardContent className="pt-4 pb-4">
-                    {/* Kopfzeile pro Schüler */}
-                    <div className="flex flex-wrap items-center gap-3">
+                  <CardContent className="pt-3 pb-3">
+                    <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-slate-900 mr-auto">
-                        {studentName}
-                      </span>
-                      {choiceItemCount > 0 && hasAnswers && (
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">
-                          {choiceCorrect}/{choiceItemCount} richtig (MC)
-                        </span>
-                      )}
-                      <span className="text-xs text-slate-500">
-                        {formatDuration(sub?.duration_seconds ?? null)}
+                        {formatName(student.display_name)}
                       </span>
                       <span
                         className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor}`}
@@ -266,95 +312,13 @@ export default async function AufgabeDetailPage({
                         {statusLabel}
                       </span>
                     </div>
-
-                    {/* Auswertung pro Item */}
-                    {hasAnswers && (
-                      <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                        {itemList.map((item, idx) => {
-                          const ans = itemAnswers.get(item.id);
-
-                          if (!ans) {
-                            return (
-                              <li
-                                key={item.id}
-                                className="text-sm text-slate-400"
-                              >
-                                {idx + 1}. {item.question} — keine Antwort
-                              </li>
-                            );
-                          }
-
-                          if (item.item_type === "choice") {
-                            const correct = isChoiceCorrect(
-                              item.correct_options as number[] | null,
-                              ans.selected_options
-                            );
-                            const opts = (item.options as string[] | null) ?? [];
-                            const selectedLabels = (ans.selected_options ?? [])
-                              .map((o: number) => opts[o])
-                              .filter(Boolean)
-                              .join(", ");
-                            return (
-                              <li key={item.id} className="text-sm">
-                                <span className="text-slate-500">
-                                  {idx + 1}.{" "}
-                                </span>
-                                <span className="text-slate-900">
-                                  {item.question}
-                                </span>
-                                <div className="mt-0.5 flex items-center gap-2">
-                                  <span
-                                    className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                                      correct
-                                        ? "bg-green-50 text-green-700"
-                                        : "bg-red-50 text-red-600"
-                                    }`}
-                                  >
-                                    {correct ? "✓ richtig" : "✗ falsch"}
-                                  </span>
-                                  <span className="text-xs text-slate-500">
-                                    Antwort:{" "}
-                                    {selectedLabels || "keine Auswahl"}
-                                  </span>
-                                </div>
-                              </li>
-                            );
-                          }
-
-                          // Freitext — manuelle Sichtung durch Lehrer
-                          return (
-                            <li key={item.id} className="text-sm">
-                              <span className="text-slate-500">
-                                {idx + 1}.{" "}
-                              </span>
-                              <span className="text-slate-900">
-                                {item.question}
-                              </span>
-                              <div className="mt-1 rounded-md bg-slate-50 border border-slate-100 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
-                                {ans.text_answer?.trim() || (
-                                  <span className="text-slate-400">
-                                    keine Antwort
-                                  </span>
-                                )}
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-
-                    {sub && !hasAnswers && (
-                      <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-400">
-                        Noch keine Antworten erfasst.
-                      </p>
-                    )}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

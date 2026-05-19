@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { submitAssignmentAction, startAssignmentAction } from "@/app/(child)/kind/aufgaben/actions";
 import { Button } from "@/components/ui/button";
+import { NumberPad } from "@/components/child/number-pad";
 
 type Item = {
   id: string;
-  type: "text" | "choice";
+  type: "text" | "choice" | "math";
   question: string;
   options: string[];
 };
@@ -59,6 +60,29 @@ export function AssignmentSolver({
     setAnswers((prev) => {
       const next = new Map(prev);
       next.set(itemId, { itemId, textAnswer: text });
+      return next;
+    });
+  }
+
+  // Mathe-Items: die eingegebene Zahl wird (wie Freitext) im textAnswer-Feld
+  // transportiert — die Server-Action bewertet sie gegen correct_number.
+  function appendDigit(itemId: string, digit: string) {
+    setAnswers((prev) => {
+      const next = new Map(prev);
+      const current = next.get(itemId)?.textAnswer ?? "";
+      // max. 7 Stellen, keine fuehrende 0 (ausser die Zahl ist genau "0").
+      if (current.length >= 7) return prev;
+      const updated = current === "0" ? digit : current + digit;
+      next.set(itemId, { itemId, textAnswer: updated });
+      return next;
+    });
+  }
+
+  function deleteDigit(itemId: string) {
+    setAnswers((prev) => {
+      const next = new Map(prev);
+      const current = next.get(itemId)?.textAnswer ?? "";
+      next.set(itemId, { itemId, textAnswer: current.slice(0, -1) });
       return next;
     });
   }
@@ -117,7 +141,11 @@ export function AssignmentSolver({
 
   const attemptsLeft = maxAttempts - attemptsUsed;
   const allCorrect = results?.every((r) => r.isCorrect === true || r.isCorrect === null);
-  const choiceItemCount = items.filter((i) => i.type === "choice").length;
+  // Auto-bewertbare Items (choice + math) — nur fuer sie kann sofort
+  // "Alles richtig" angezeigt werden; reine Freitext-Abgaben nicht.
+  const autoGradedCount = items.filter(
+    (i) => i.type === "choice" || i.type === "math"
+  ).length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -151,7 +179,7 @@ export function AssignmentSolver({
 
       {/* Erfolg / Abgabe */}
       {results && allCorrect && (
-        choiceItemCount > 0 ? (
+        autoGradedCount > 0 ? (
           <div className="glass-card rounded-2xl p-6 text-center shadow-md border-2 border-green-200 animate-fade-in">
             <p className="text-4xl mb-3">🎉</p>
             <h3 className="text-lg font-bold text-green-700">Alles richtig!</h3>
@@ -185,7 +213,12 @@ export function AssignmentSolver({
           >
             <div className="flex items-start justify-between mb-3">
               <p className="text-xs text-slate-400 font-semibold">
-                Aufgabe {idx + 1} — {item.type === "text" ? "Freitext" : "Multiple Choice"}
+                Aufgabe {idx + 1} —{" "}
+                {item.type === "text"
+                  ? "Freitext"
+                  : item.type === "math"
+                    ? "Rechenaufgabe"
+                    : "Multiple Choice"}
               </p>
               {showResult && isCorrect && (
                 <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Richtig</span>
@@ -211,6 +244,25 @@ export function AssignmentSolver({
                 value={answers.get(item.id)?.textAnswer ?? ""}
                 onChange={(e) => setTextAnswer(item.id, e.target.value)}
               />
+            ) : item.type === "math" ? (
+              <div className="flex flex-col items-center gap-4">
+                {/* Anzeige der eingegebenen Zahl */}
+                <div className="flex h-16 w-full max-w-xs items-center justify-center rounded-2xl border-2 border-cyan-200 bg-cyan-50/50 text-4xl font-extrabold text-slate-800">
+                  {answers.get(item.id)?.textAnswer ? (
+                    answers.get(item.id)?.textAnswer
+                  ) : (
+                    <span className="text-2xl text-slate-300">?</span>
+                  )}
+                </div>
+                <NumberPad
+                  disabled={locked}
+                  onDigit={(d) => appendDigit(item.id, d)}
+                  onDelete={() => deleteDigit(item.id)}
+                  // OK ist hier nur ein haptisches Feedback — abgegeben wird
+                  // alles gesammelt ueber den grossen Button unten.
+                  onConfirm={() => {}}
+                />
+              </div>
             ) : (
               <div className="grid gap-2">
                 {item.options.map((opt, optIdx) => {

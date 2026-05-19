@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AddStudentForm } from "@/components/teacher/add-student-form";
+import { DeleteStudentButton } from "@/components/teacher/delete-student-button";
 import { formatName } from "@/lib/teacher/format";
 import {
   aggregateProgressByChild,
@@ -166,6 +167,9 @@ export default async function KlasseDetailPage({
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Aufgaben</th>
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Genauigkeit</th>
                 <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Letzte Aktivität</th>
+                <th className="px-5 py-3.5">
+                  <span className="sr-only">Aktionen</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -253,6 +257,13 @@ export default async function KlasseDetailPage({
                     </td>
                     <td className="px-5 py-3.5 text-sm text-right text-slate-500">
                       {lastDate ?? "--"}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <DeleteStudentButton
+                        studentUserId={student.user_id}
+                        classId={classData.id}
+                        studentName={formatName(student.display_name)}
+                      />
                     </td>
                   </tr>
                 );
